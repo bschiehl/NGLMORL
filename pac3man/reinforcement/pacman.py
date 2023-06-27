@@ -46,7 +46,12 @@ from game import Actions
 from util import nearestPoint
 from util import manhattanDistance
 import util, layout
-import sys, types, time, random, os
+import sys, types, time, random, os, datetime
+import csv
+from game import AgentState, Configuration, Directions
+import filter
+import graphicsDisplay
+
 
 ###################################################
 # YOUR INTERFACE TO THE PACMAN WORLD: A GameState #
@@ -79,7 +84,7 @@ class GameState:
         return tmp
     getAndResetExplored = staticmethod(getAndResetExplored)
 
-    def getLegalActions( self, agentIndex=0 ):
+    def getLegalActions( self, agentIndex=0, filter=None , train=False , supervise=False):
         """
         Returns the legal actions for the agent specified.
         """
@@ -87,7 +92,8 @@ class GameState:
         if self.isWin() or self.isLose(): return []
 
         if agentIndex == 0:  # Pacman is moving
-            return PacmanRules.getLegalActions( self )
+            legal = PacmanRules.getLegalActions( self, filter=filter, train=train, supervise=supervise)
+            return legal
         else:
             return GhostRules.getLegalActions( self, agentIndex )
 
@@ -100,13 +106,18 @@ class GameState:
 
         # Copy current state
         state = GameState(self)
-
-        # Let agent's logic deal with its action's effects on the board
-        if agentIndex == 0:  # Pacman is moving
-            state.data._eaten = [False for i in range(state.getNumAgents())]
-            PacmanRules.applyAction( state, action )
+        #if agentIndex == 0:
+        #    state.lastAction = action
+        #else:
+        #    state.lastAction = self.lastAction
+        #result = 1
+        if agentIndex == 0:
+            PacmanRules.applyAction( state, action)
+            # EVALUATION code
+            #if filter is not None and train and eval:
+            #    result = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'EVALUATION')))
         else:                # A ghost is moving
-            GhostRules.applyAction( state, action, agentIndex )
+            GhostRules.applyAction( state, action, agentIndex)
 
         # Time passes
         if agentIndex == 0:
@@ -115,17 +126,19 @@ class GameState:
             GhostRules.decrementTimer( state.data.agentStates[agentIndex] )
 
         # Resolve multi-agent effects
-        GhostRules.checkDeath( state, agentIndex )
+        #compliant = filter.isCompliant()
+        GhostRules.checkDeath( state, agentIndex)
 
         # Book keeping
         state.data._agentMoved = agentIndex
-        state.data.score += state.data.scoreChange
+        #SCORE CHANGE
+        state.data.score += state.data.scoreChange #* result
         GameState.explored.add(self)
         GameState.explored.add(state)
         return state
 
-    def getLegalPacmanActions( self ):
-        return self.getLegalActions( 0 )
+    def getLegalPacmanActions( self, filter=None, train=False, supervise=False):
+        return self.getLegalActions( 0, filter, train , supervise)
 
     def generatePacmanSuccessor( self, action ):
         """
@@ -166,6 +179,12 @@ class GameState:
 
     def getScore( self ):
         return float(self.data.score)
+    
+    def getGhostsEaten(self):
+        return (self.data._ghostsEaten1, self.data._ghostsEaten2)
+
+    def getViolations(self):
+        return self.data._violations
 
     def getCapsules(self):
         """
@@ -217,14 +236,17 @@ class GameState:
     # You shouldn't need to call these directly #
     #############################################
 
-    def __init__( self, prevState = None ):
+    def __init__( self, prevState = None):
         """
         Generates a new state by copying information from its predecessor.
         """
         if prevState != None: # Initial state
             self.data = GameStateData(prevState.data)
+            #self.train = prevState.train
         else:
             self.data = GameStateData()
+            #self.train = train
+        #self.lastAction = None
 
     def deepCopy( self ):
         state = GameState( self )
@@ -271,11 +293,13 @@ class ClassicGameRules:
     def __init__(self, timeout=30):
         self.timeout = timeout
 
-    def newGame( self, layout, pacmanAgent, ghostAgents, display, quiet = False, catchExceptions=False):
+    def newGame( self, layout, pacmanAgent, ghostAgents, display, quiet = False, catchExceptions=False, filter=None,
+                 train=False, supervise=False, learn1=False, learn2=False):
         agents = [pacmanAgent] + ghostAgents[:layout.getNumGhosts()]
         initState = GameState()
         initState.initialize( layout, len(ghostAgents) )
-        game = Game(agents, display, self, catchExceptions=catchExceptions)
+        game = Game(agents, display, self, catchExceptions=catchExceptions, filter=filter, train=train,
+                    supervise=supervise, learn1=learn1, learn2=learn2)
         game.state = initState
         self.initialState = initState.deepCopy()
         self.quiet = quiet
@@ -327,21 +351,26 @@ class PacmanRules:
     """
     PACMAN_SPEED=1
 
-    def getLegalActions( state ):
+    def getLegalActions( state, filter=None , train=False, supervise=False):
         """
         Returns a list of possible actions.
         """
-        return Actions.getPossibleActions( state.getPacmanState().configuration, state.data.layout.walls )
+        actions = Actions.getPossibleActions(state.getPacmanState().configuration, state.data.layout.walls)
+        if filter is not None and not train and supervise:
+            legal = filter.process_message(filter.send_request(filter.build_query(state.data, actions,
+                                                                                  'FILTER')))
+        else:
+            legal = actions
+        return legal
     getLegalActions = staticmethod( getLegalActions )
 
-    def applyAction( state, action ):
+    def applyAction( state, action):
         """
         Edits the state to reflect the results of the action.
         """
-        legal = PacmanRules.getLegalActions( state )
-        if action not in legal:
-            raise Exception("Illegal action " + str(action))
-
+        #legal = PacmanRules.getLegalActions( state )
+        #if action not in legal:
+        #    raise Exception("Illegal action " + str(action))
         pacmanState = state.data.agentStates[0]
 
         # Update Configuration
@@ -401,8 +430,8 @@ class GhostRules:
     def applyAction( state, action, ghostIndex):
 
         legal = GhostRules.getLegalActions( state, ghostIndex )
-        if action not in legal:
-            raise Exception("Illegal ghost action " + str(action))
+        #if action not in legal:
+        #    raise Exception("Illegal ghost action " + str(action))
 
         ghostState = state.data.agentStates[ghostIndex]
         speed = GhostRules.GHOST_SPEED
@@ -425,7 +454,7 @@ class GhostRules:
                 ghostState = state.data.agentStates[index]
                 ghostPosition = ghostState.configuration.getPosition()
                 if GhostRules.canKill( pacmanPosition, ghostPosition ):
-                    GhostRules.collide( state, ghostState, index )
+                    GhostRules.collide( state, ghostState, index)
         else:
             ghostState = state.data.agentStates[agentIndex]
             ghostPosition = ghostState.configuration.getPosition()
@@ -434,12 +463,25 @@ class GhostRules:
     checkDeath = staticmethod( checkDeath )
 
     def collide( state, ghostState, agentIndex):
-        if ghostState.scaredTimer > 0:
-            state.data.scoreChange += 200
+        if ghostState.isScared():
+            state.data.scoreChange += 200 
             GhostRules.placeGhost(state, ghostState)
             ghostState.scaredTimer = 0
             # Added for first-person
-            state.data._eaten[agentIndex] = True
+            #if not compliant:
+            #    state.data._violations += 1
+            #*****saving actions during collisions
+            #a = [state.lastAction]
+            #print(state.lastAction)
+            #if not state.train:
+            #    with open('actions.csv', 'a') as fd:
+            #        writer = csv.writer(fd)
+            #        writer.writerow(a)
+            if agentIndex == 1:
+                state.data._ghostsEaten1 = state.data._ghostsEaten1 + 1
+            if agentIndex == 2:
+                state.data._ghostsEaten2 = state.data._ghostsEaten2 + 1
+
         else:
             if not state.data._win:
                 state.data.scoreChange -= 500
@@ -523,6 +565,20 @@ def readCommand( argv ):
                       help='Turns on exception handling and timeouts during games', default=False)
     parser.add_option('--timeout', dest='timeout', type='int',
                       help=default('Maximum length of time an agent can spend computing in a single game'), default=30)
+    parser.add_option('--norm', dest='norm', help=default('Specify norm set: broken, busy, hungry, vegan, vegetarian'),
+                      default=None)
+    parser.add_option('--reason', dest='reason', help=default('Specify reasoner type: DDPL'), default=None)
+
+    parser.add_option('--rec', dest='rec', help=default('Would you like to save a record of tests run? Input file name.'),
+                      default=None)
+    parser.add_option('--supervise', action='store_true', dest='supervise', help='Use normative supervisor?', default=False)
+    parser.add_option('--learn', action='store_true', dest='learn1', help='Learn with norms - only choose with MORL agent', default=False)
+    parser.add_option('--sublearn', action='store_true', dest='learn2',
+                      help='Learn with sub ideal reward function; only select for SubIdealAgent', default=False)
+    parser.add_option('--partial', action='store_true', dest='partial', help='Learn with a partial MDP', default=False)
+    #parser.add_option('--punish', type='int', dest='punish', help=default('Punishment for violation of norm base.'), default=0)
+    parser.add_option('--port', type='int', dest='port', help=default('Port number.'), default=6666)
+    #parser.add_option('--track', action='store_true', dest='track', default=False)
 
     options, otherjunk = parser.parse_args(argv)
     if len(otherjunk) != 0:
@@ -570,8 +626,18 @@ def readCommand( argv ):
     args['record'] = options.record
     args['catchExceptions'] = options.catchExceptions
     args['timeout'] = options.timeout
-
-    # Special case: recorded games don't use the runGames method or args structure
+    args['norm'] = options.norm
+    args['reason'] = options.reason
+    args['rec'] = options.rec
+    args['supervise'] = options.supervise
+    args['learn1'] = options.learn1
+    args['learn2'] = options.learn2
+    args['partial'] = options.partial
+    args['port'] = options.port
+    #if options.track:
+    #    with open('actions.csv', 'w') as file:
+    #       pass
+        # Special case: recorded games don't use the runGames method or args structure
     if options.gameToReplay != None:
         print('Replaying recorded game %s.' % options.gameToReplay)
         import pickle as cPickle
@@ -625,24 +691,42 @@ def replayGame( layout, actions, display ):
 
     display.finish()
 
-def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30 ):
+def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30,
+              norm=None, reason=None, rec=None, supervise=False, learn1=False, learn2=False, partial=False, port=6666):
     import __main__
     __main__.__dict__['_display'] = display
 
     rules = ClassicGameRules(timeout)
     games = []
 
+    if norm is not None and reason is not None:
+        filt = filter.NormativeFilter(norm, reason, port=port)
+        filt.connect()
+    else:
+        filt = None
+
     for i in range( numGames ):
+        if filt is not None:
+            filt.setID(i)
+        print("starting game: "+str(i))
         beQuiet = i < numTraining
         if beQuiet:
-                # Suppress output and graphics
+            # Suppress output and graphics
             import textDisplay
             gameDisplay = textDisplay.NullGraphics()
             rules.quiet = True
+            if partial:
+                train = False
+                sup = True
+            else:
+                train = True
+                sup = supervise
         else:
             gameDisplay = display
             rules.quiet = False
-        game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
+            train = False
+            sup = supervise
+        game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions, filt, train, sup, learn1,learn2)
         game.run()
         if not beQuiet: games.append(game)
 
@@ -654,8 +738,20 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
             components = {'layout': layout, 'actions': game.moveHistory}
             cPickle.dump(components, f)
             f.close()
+    if filt is not None:
+        filt.terminate_server()
 
     if (numGames-numTraining) > 0:
+        # FOR RECORDING RESULTS
+        if rec is not None:
+            with open(rec+'.csv', 'w') as file:
+                writer = csv.writer(file)
+                header = ['score', 'blue ghosts eaten', 'orange ghosts eaten', 'violations', 'win/lose']
+                writer.writerow(header)
+                for game in games:
+                    row = [game.state.getScore(), game.state.getGhostsEaten()[0], game.state.getGhostsEaten()[1], game.state.getViolations(), game.state.isWin()]
+                    writer.writerow(row)
+
         scores = [game.state.getScore() for game in games]
         wins = [game.state.isWin() for game in games]
         winRate = wins.count(True)/ float(len(wins))

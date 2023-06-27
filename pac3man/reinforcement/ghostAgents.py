@@ -79,3 +79,19 @@ class DirectionalGhost( GhostAgent ):
         for a in legalActions: dist[a] += ( 1-bestProb ) / len(legalActions)
         dist.normalize()
         return dist
+    
+class StillGhost( GhostAgent ):
+    "A ghost that stands still."
+    def getAction( self, state ):
+        return Directions.STOP
+    
+
+class MonoGhost( GhostAgent ):
+    def getAction( self, state ):
+        legal = state.getLegalActions(self.index)
+        if Directions.NORTH in legal:
+            return Directions.NORTH
+        elif Directions.SOUTH in legal:
+            return Directions.SOUTH
+        else:
+            return Directions.STOP

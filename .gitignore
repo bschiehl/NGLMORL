@@ -140,3 +140,5 @@ src/safety-gym/
 /figs/
 /lmorl/lmorl/data/
 /pac3man/reinforcement/test_cases/
+/lmorl/lmorl/src/gym-safety/
+/lmorl/lmorl/src/open-safety/

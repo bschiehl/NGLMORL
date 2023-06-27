@@ -21,8 +21,8 @@ import util
 class LeftTurnAgent(game.Agent):
     "An agent that turns left at every opportunity"
 
-    def getAction(self, state):
-        legal = state.getLegalPacmanActions()
+    def getAction(self, state, filter=None, train=False, supervise=False):
+        legal = state.getLegalPacmanActions(filter, train, supervise)
         current = state.getPacmanState().configuration.direction
         if current == Directions.STOP: current = Directions.NORTH
         left = Directions.LEFT[current]
@@ -37,9 +37,9 @@ class GreedyAgent(Agent):
         self.evaluationFunction = util.lookup(evalFn, globals())
         assert self.evaluationFunction != None
 
-    def getAction(self, state):
+    def getAction(self, state, filter=None, train=False, supervise=False):
         # Generate candidate actions
-        legal = state.getLegalPacmanActions()
+        legal = state.getLegalPacmanActions(filter, train, supervise)
         if Directions.STOP in legal: legal.remove(Directions.STOP)
 
         successors = [(state.generateSuccessor(0, action), action) for action in legal]
@@ -47,6 +47,12 @@ class GreedyAgent(Agent):
         bestScore = max(scored)[0]
         bestActions = [pair[1] for pair in scored if pair[0] == bestScore]
         return random.choice(bestActions)
+
+
+class RandomAgent(Agent):
+    def getAction(self, state, filter=None, train=False, supervise=False):
+        legal = state.getLegalPacmanActions(filter, train, supervise)
+        return random.choice(legal)
 
 def scoreEvaluation(state):
     return state.getScore()

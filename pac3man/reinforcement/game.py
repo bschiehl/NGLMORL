@@ -39,7 +39,7 @@ class Agent:
     def __init__(self, index=0):
         self.index = index
 
-    def getAction(self, state):
+    def getAction(self, state, filter=None, train=False, supervise=False):
         """
         The Agent will receive a GameState (from either {pacman, capture, sonar}.py) and
         must return an action from Directions.{North, South, East, West, Stop}
@@ -158,6 +158,9 @@ class AgentState:
 
     def getDirection(self):
         return self.configuration.getDirection()
+    
+    def isScared(self):
+        return self.scaredTimer > 0
 
 class Grid:
     """
@@ -381,8 +384,10 @@ class GameStateData:
             self.capsules = prevState.capsules[:]
             self.agentStates = self.copyAgentStates( prevState.agentStates )
             self.layout = prevState.layout
-            self._eaten = prevState._eaten
             self.score = prevState.score
+            self._ghostsEaten1 = prevState._ghostsEaten1
+            self._ghostsEaten2 = prevState._ghostsEaten2
+            self._violations = prevState._violations
 
         self._foodEaten = None
         self._foodAdded = None
@@ -494,6 +499,9 @@ class GameStateData:
         self.layout = layout
         self.score = 0
         self.scoreChange = 0
+        self._ghostsEaten1 = 0
+        self._ghostsEaten2 = 0
+        self._violations = 0
 
         self.agentStates = []
         numGhosts = 0
@@ -502,7 +510,6 @@ class GameStateData:
                 if numGhosts == numGhostAgents: continue # Max ghosts reached already
                 else: numGhosts += 1
             self.agentStates.append( AgentState( Configuration( pos, Directions.STOP), isPacman) )
-        self._eaten = [False for a in self.agentStates]
 
 try:
     import boinc
@@ -515,7 +522,8 @@ class Game:
     The Game manages the control flow, soliciting actions from agents.
     """
 
-    def __init__( self, agents, display, rules, startingIndex=0, muteAgents=False, catchExceptions=False ):
+    def __init__( self, agents, display, rules, startingIndex=0, muteAgents=False, catchExceptions=False, filter=None,
+                 train=False, supervise=False, learn1=False, learn2=False):
         self.agentCrashed = False
         self.agents = agents
         self.display = display
@@ -533,6 +541,11 @@ class Game:
         except ImportError:
             from io import StringIO ## for Python 3
         self.agentOutput = [StringIO() for agent in agents]
+        self.filter = filter
+        self.train = train
+        self.supervise = supervise
+        self.learn1 = learn1
+        self.learn2 = learn2
 
     def getProgress(self):
         if self.gameOver:
@@ -686,7 +699,10 @@ class Game:
                     self.unmute()
                     return
             else:
-                action = agent.getAction(observation)
+                if agentIndex == 0:
+                    action = agent.getAction(observation, filter=self.filter, train=self.train, supervise=self.supervise)
+                else:
+                    action = agent.getAction(observation)
             self.unmute()
 
             # Execute the action
