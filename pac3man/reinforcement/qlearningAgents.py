@@ -151,7 +151,7 @@ class PacmanQAgent(QLearningAgent):
         self.index = 0  # This is always Pacman
         QLearningAgent.__init__(self, **args)
 
-    def getAction(self, state):
+    def getAction(self, state, filter=None, train=False, supervise=False):
         """
         Simply calls the getAction method of QLearningAgent and then
         informs parent of action for Pacman.  Do not change or remove this
