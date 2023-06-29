@@ -28,8 +28,8 @@ class NormativeFilter():
         to = {}
         to['request'] = "TERMINATION"
         to_send = json.dumps(to)
-        self.server.sendall(to_send)
-        self.server.send('\n')
+        self.server.sendall(to_send.encode())
+        self.server.send('\n'.encode())
         self.server.close()
 
     def isCompliant(self):
@@ -37,9 +37,10 @@ class NormativeFilter():
 
 
     def send_request(self, request):
+        #print(request)
         to_send = json.dumps(request)
-        self.server.sendall(to_send)
-        self.server.send('\n')
+        self.server.sendall(to_send.encode())
+        self.server.send('\n'.encode())
         receipt = self.server.recv(1024)
         answ = json.loads(receipt)
         return answ
