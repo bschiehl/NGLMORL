@@ -65,6 +65,8 @@ class NormativeFilter():
                     return -1,0
                 else:
                     return -1,-1
+        elif message['response'] == 'VIOL-COUNT':
+            return message['violCount']
 
 
     def build_query(self, state, actions, rt):
@@ -74,9 +76,7 @@ class NormativeFilter():
         to['request'] = rt
         if rt == 'FILTER':
             to['possible'] = actions
-        elif rt == 'EVALUATION':
-            to['action'] = actions[0]
-        elif rt == 'DUAL-EVALUATION':
+        elif rt == 'EVALUATION' or rt == 'DUAL-EVALUATION' or rt == 'VIOL-COUNT':
             to['action'] = actions[0]
         return to
 
