@@ -47,16 +47,18 @@ class NormativeFilter():
 
 
     def process_message(self, message):
-        self.compliant = message['compliant']
         if message['response'] == 'RECOMMENDATION':
+            self.compliant = message['compliant']
             legal = message['actions']
             return legal
         elif message['response'] == 'EVALUATION':
+            self.compliant = message['compliant']
             if self.compliant:
                 return 0
             else:
                 return -1
         elif message['response'] == 'DUAL-EVALUATION':
+            self.compliant = message['compliant']
             subideal = message['sub-ideal']
             if self.compliant:
                 return 0,0

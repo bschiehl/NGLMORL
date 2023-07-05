@@ -294,12 +294,12 @@ class ClassicGameRules:
         self.timeout = timeout
 
     def newGame( self, layout, pacmanAgent, ghostAgents, display, quiet = False, catchExceptions=False, filter=None,
-                 train=False, supervise=False, learn1=False, learn2=False):
+                 train=False, supervise=False, learn1=False, learn2=False, lex=False):
         agents = [pacmanAgent] + ghostAgents[:layout.getNumGhosts()]
         initState = GameState()
         initState.initialize( layout, len(ghostAgents) )
         game = Game(agents, display, self, catchExceptions=catchExceptions, filter=filter, train=train,
-                    supervise=supervise, learn1=learn1, learn2=learn2)
+                    supervise=supervise, learn1=learn1, learn2=learn2, lex=lex)
         game.state = initState
         self.initialState = initState.deepCopy()
         self.quiet = quiet
@@ -575,6 +575,7 @@ def readCommand( argv ):
     parser.add_option('--learn', action='store_true', dest='learn1', help='Learn with norms - only choose with MORL agent', default=False)
     parser.add_option('--sublearn', action='store_true', dest='learn2',
                       help='Learn with sub ideal reward function; only select for SubIdealAgent', default=False)
+    parser.add_option('--lex', action='store_true', dest='lex', help='Use NGLMORL - only choose with lexAgent', default=False)
     parser.add_option('--partial', action='store_true', dest='partial', help='Learn with a partial MDP', default=False)
     #parser.add_option('--punish', type='int', dest='punish', help=default('Punishment for violation of norm base.'), default=0)
     parser.add_option('--port', type='int', dest='port', help=default('Port number.'), default=6666)
@@ -634,6 +635,7 @@ def readCommand( argv ):
     args['learn2'] = options.learn2
     args['partial'] = options.partial
     args['port'] = options.port
+    args['lex'] = options.lex
     #if options.track:
     #    with open('actions.csv', 'w') as file:
     #       pass
@@ -692,7 +694,7 @@ def replayGame( layout, actions, display ):
     display.finish()
 
 def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30,
-              norm=None, reason=None, rec=None, supervise=False, learn1=False, learn2=False, partial=False, port=6666):
+              norm=None, reason=None, rec=None, supervise=False, learn1=False, learn2=False, partial=False, port=6666, lex=False):
     import __main__
     __main__.__dict__['_display'] = display
 
@@ -726,7 +728,7 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
             rules.quiet = False
             train = False
             sup = supervise
-        game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions, filt, train, sup, learn1,learn2)
+        game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions, filt, train, sup, learn1,learn2, lex)
         game.run()
         if not beQuiet: games.append(game)
 

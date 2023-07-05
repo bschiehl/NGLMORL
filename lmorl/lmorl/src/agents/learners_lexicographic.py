@@ -259,7 +259,7 @@ class LexActorCritic:
         # Update Lagrange parameters
         r = self.i if self.i != None else self.reward_size - 1
         for i in range(r):
-            self.mu[i] += self.eta[i] * (self.j[i] - (-self.recent_losses[i][-1]))
+            self.mu[i] += self.eta[i] * (self.j[i] - (-self.recent_losses[i][-1])) #issue 7
             self.mu[i] = max(self.mu[i], 0.0)
             if self.second_order:
                 self.lamb[i].train()
@@ -287,8 +287,6 @@ class LexActorCritic:
             if abs(l_old_mean - l_new_mean)/abs(l_new_mean) > tolerance:
                 return False
         
-        return True
-
         return True
 
     def get_log_probs(self, states, actions):

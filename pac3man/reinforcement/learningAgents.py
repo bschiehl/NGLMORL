@@ -121,7 +121,7 @@ class ReinforcementAgent(ValueEstimationAgent):
         """
         return self.actionFn(state, filter, train, supervise)
 
-    def observeTransition(self, state,action,nextState,deltaReward, filter=None, learn1=False, learn2=False):
+    def observeTransition(self, state,action,nextState,deltaReward, filter=None, learn1=False, learn2=False, lex=False):
         """
             Called by environment to inform agent that a transition has
             been observed. This will result in a call to self.update
@@ -130,14 +130,21 @@ class ReinforcementAgent(ValueEstimationAgent):
             NOTE: Do *not* override or call this function
         """
         self.episodeRewards += deltaReward
-        self.update(state,action,nextState,deltaReward)
         if learn1 and filter is not None:
+            self.update(state,action,nextState,deltaReward)
             result = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'EVALUATION')))
             self.update2(state, action, nextState, result)
         if learn2 and filter is not None:
+            self.update(state,action,nextState,deltaReward)
             result1, result2 = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'DUAL-EVALUATION')))
             self.update2(state, action, nextState, result1)
             self.update3(state, action, nextState, result2)
+        if lex and filter is not None:
+            violCount = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'VIOL-COUNT')))
+            reward = [-violCount, deltaReward]
+            action = util.Action[action].value
+            self.update(state, action, nextState, reward)
+
 
     def startEpisode(self):
         """
@@ -211,14 +218,14 @@ class ReinforcementAgent(ValueEstimationAgent):
     ###################
     # Pacman Specific #
     ###################
-    def observationFunction(self, state, filter=None, learn1=False, learn2=False):
+    def observationFunction(self, state, filter=None, learn1=False, learn2=False, lex=False):
         """
             This is where we ended up after our last action.
             The simulation should somehow ensure this is called
         """
         if not self.lastState is None:
             reward = state.getScore() - self.lastState.getScore()
-            self.observeTransition(self.lastState, self.lastAction, state, reward, filter, learn1, learn2)
+            self.observeTransition(self.lastState, self.lastAction, state, reward, filter, learn1, learn2, lex)
         return state
 
     def registerInitialState(self, state):

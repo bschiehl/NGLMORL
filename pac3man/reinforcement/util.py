@@ -15,6 +15,7 @@
 import sys
 import inspect
 import heapq, random
+from enum import Enum
 try:
     from StringIO import StringIO ## for Python 2
 except ImportError:
@@ -624,7 +625,12 @@ class TimeoutFunction:
                 self.handle_timeout(None, None)
         return result
 
-
+class Action(Enum):
+    Stop=0
+    North=1
+    West=2
+    South=3
+    East=4
 
 _ORIGINAL_STDOUT = None
 _ORIGINAL_STDERR = None

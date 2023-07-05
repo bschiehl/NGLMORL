@@ -143,3 +143,7 @@ src/safety-gym/
 /lmorl/lmorl/src/gym-safety/
 /lmorl/lmorl/src/open-safety/
 *.csv
+/.vscode/
+/.idea/
+com/
+spindle/
