@@ -147,3 +147,5 @@ src/safety-gym/
 /.idea/
 com/
 spindle/
+myactivate.sh
+

@@ -15,7 +15,7 @@
 import sys
 import inspect
 import heapq, random
-from enum import Enum
+from aenum import Enum, MultiValue
 try:
     from StringIO import StringIO ## for Python 2
 except ImportError:
@@ -626,11 +626,20 @@ class TimeoutFunction:
         return result
 
 class Action(Enum):
-    Stop=0
-    North=1
-    West=2
-    South=3
-    East=4
+    _init_ = 'value fullname'
+    _settings_ = MultiValue
+
+    Stop=0, 'Stop'
+    North=1, 'North'
+    West=2, 'West'
+    South=3, 'South'
+    East=4, 'East'
+
+    def __int__(self):
+        return self.value
+    
+    def __str__(self):
+        return self.name
 
 _ORIGINAL_STDOUT = None
 _ORIGINAL_STDERR = None

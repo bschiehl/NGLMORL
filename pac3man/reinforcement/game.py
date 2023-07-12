@@ -46,6 +46,17 @@ class Agent:
         """
         raiseNotDefined()
 
+class PacmanAgent(Agent):
+
+    def registerInitialState(self, state):
+        raiseNotDefined()
+    
+    def observationFunction(self, state):
+        raiseNotDefined()
+
+    def final(self, state):
+        raiseNotDefined()
+
 class Directions:
     NORTH = 'North'
     SOUTH = 'South'

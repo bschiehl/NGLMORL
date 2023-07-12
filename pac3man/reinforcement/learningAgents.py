@@ -142,7 +142,6 @@ class ReinforcementAgent(ValueEstimationAgent):
         if lex and filter is not None:
             violCount = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'VIOL-COUNT')))
             reward = [-violCount, deltaReward]
-            action = util.Action[action].value
             self.update(state, action, nextState, reward)
 
 

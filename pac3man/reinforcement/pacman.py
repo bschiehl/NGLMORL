@@ -51,6 +51,7 @@ import csv
 from game import AgentState, Configuration, Directions
 import filter
 import graphicsDisplay
+from TrainingParameters import TrainingParameters
 
 
 ###################################################
@@ -576,6 +577,7 @@ def readCommand( argv ):
     parser.add_option('--sublearn', action='store_true', dest='learn2',
                       help='Learn with sub ideal reward function; only select for SubIdealAgent', default=False)
     parser.add_option('--lex', action='store_true', dest='lex', help='Use NGLMORL - only choose with lexAgent', default=False)
+    parser.add_option('--lexArgs', dest='lexArgs', help='Comma separated hyperparameters for LexAgents')
     parser.add_option('--partial', action='store_true', dest='partial', help='Learn with a partial MDP', default=False)
     #parser.add_option('--punish', type='int', dest='punish', help=default('Punishment for violation of norm base.'), default=0)
     parser.add_option('--port', type='int', dest='port', help=default('Port number.'), default=6666)
@@ -597,10 +599,15 @@ def readCommand( argv ):
     noKeyboard = options.gameToReplay == None and (options.textGraphics or options.quietGraphics)
     pacmanType = loadAgent(options.pacman, noKeyboard)
     agentOpts = parseAgentArgs(options.agentArgs)
+    lexOpts = parseAgentArgs(options.lexArgs)
     if options.numTraining > 0:
         args['numTraining'] = options.numTraining
         if 'numTraining' not in agentOpts: agentOpts['numTraining'] = options.numTraining
-    pacman = pacmanType(**agentOpts) # Instantiate Pacman with agentArgs
+    if options.lex:
+        train_params = TrainingParameters(**lexOpts)
+        pacman = pacmanType(train_params, **agentOpts)
+    else:
+        pacman = pacmanType(**agentOpts) # Instantiate Pacman with agentArgs
     args['pacman'] = pacman
 
     # Don't display training games
@@ -697,6 +704,7 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
               norm=None, reason=None, rec=None, supervise=False, learn1=False, learn2=False, partial=False, port=6666, lex=False):
     import __main__
     __main__.__dict__['_display'] = display
+    os.environ["DISPLAY"] = ":0"
 
     rules = ClassicGameRules(timeout)
     games = []
