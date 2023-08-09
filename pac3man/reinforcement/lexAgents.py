@@ -73,11 +73,13 @@ class PacmanLDQNAgent(LDQNLearningAgent, PacmanAgent):
 
 
 class LTQLearningAgent(ReinforcementAgent):
-    def __init__(self, train_params, initialisation, action_size, double=False, discount=0.99, **args):
+    def __init__(self, train_params, initialisation, actions, double=False, discount=0.99, **args):
         self.slack = train_params.slack
         ReinforcementAgent.__init__(self, **args)
 
-        self.actions=list(Actions._directions.keys())
+        self.actions=actions
+        double = bool(double)
+        discount = float(discount)
 
         if not double:
             self.Q = [{} for _ in range(train_params.reward_size)]
@@ -87,9 +89,10 @@ class LTQLearningAgent(ReinforcementAgent):
     
         self.discount = discount
 
-        if isinstance(initialisation, float) or isinstance(initialisation, int):
+        try:
+            initialisation = float(initialisation)
             self.initialisation = [initialisation for _ in range(train_params.reward_size)]
-        else:
+        except TypeError:
             self.initialisation = initialisation
         
         self.double = double
@@ -152,8 +155,7 @@ class LTQLearningAgent(ReinforcementAgent):
             r = self.slack
             permissible_actions = [a for a in permissible_actions if Qi[next_state][a] >= m - r * abs(m)]
 
-            alpha = 0.01
-            Qi[state][action] = (1 - alpha) * Qi[state][action] + alpha * (reward[i] + self.discount * m)
+            Qi[state][action] = (1 - self.alpha) * Qi[state][action] + self.alpha * (reward[i] + self.discount * m)
 
     def SARSA_update(self, state, action, next_state, reward):
 
@@ -178,12 +180,12 @@ class LTQLearningAgent(ReinforcementAgent):
         for i, Qi in enumerate(self.Q):
             exp = sum([p * Qi[next_state][a] for p, a in zip(ps, self.actions)])
             target = reward[i] + self.discount * exp
-            alpha = 0.01
-            Qi[state][action] = (1 - alpha) * Qi[state][action] + alpha * target
+           
+            Qi[state][action] = (1 - self.alpha) * Qi[state][action] + self.alpha * target
 
     def double_Q_update(self, state, action, next_state, reward):
 
-        done = state.data._win or state.data._lose
+        done = next_state.data._win or next_state.data._lose
         state = str(state)
         next_state = str(next_state)
         permissible_actions = self.actions
@@ -200,8 +202,7 @@ class LTQLearningAgent(ReinforcementAgent):
                 m = Qai[next_state][a]
                 target = 0 if done else reward[i] + self.discount * m
 
-                alpha = 0.01
-                Qai[state][action] = (1 - alpha) * Qai[state][action] + alpha * target
+                Qai[state][action] = (1 - self.alpha) * Qai[state][action] + self.alpha * target
 
             else:
 
@@ -212,8 +213,7 @@ class LTQLearningAgent(ReinforcementAgent):
                 m = Qbi[next_state][a]
                 target = 0 if done else reward[i] + self.discount * m
 
-                alpha = 0.01
-                Qbi[state][action] = (1 - alpha) * Qbi[state][action] + alpha * target
+                Qbi[state][action] = (1 - self.alpha) * Qbi[state][action] + self.alpha * target
 
     def save_model(self, root):
         if not self.double:
@@ -237,8 +237,8 @@ class LTQLearningAgent(ReinforcementAgent):
 
 
 class PacmanLTQAgent(LTQLearningAgent):
-    def __init__(self, train_params, initialisation=0, action_size = 5,  double=False, discount=0.99, **args):
-        LTQLearningAgent.__init__(self, train_params, initialisation, action_size, double, discount, **args)
+    def __init__(self, train_params, initialisation=0, double=False, discount=0.99, **args):
+        LTQLearningAgent.__init__(self, train_params, initialisation, list(Actions._directions.keys()), double, discount, **args)
 
     def getAction(self, state, filter=None, train=False, supervise=False):
         action = LTQLearningAgent.getAction(self,state, filter, train, supervise)

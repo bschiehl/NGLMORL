@@ -291,6 +291,26 @@ class ContinuousPolicyCNN2(nn.Module):
         var = F.softplus(self.var(x)) + 1e-5
 
         return mu, var
+    
+##################################################
+
+# pacman specific networks
+
+class PacmanCNN(nn.Module):
+    def __init__(self, width, height, in_channels=6, num_actions=5, hidden=64):
+        super(PacmanCNN, self).__init__()
+
+        self.conv1 = nn.Conv2d(in_channels, 16, kernel_size=3, stride=1)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=1)
+        self.lin1 = nn.Linear(32 * (width - 4) * (height - 4), hidden)
+        self.lin2 = nn.Linear(hidden, num_actions)
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.lin1(x.view(x.size(0), -1)))
+        x = self.lin2(x)
+        return x
 
 
 ##################################################
@@ -353,19 +373,20 @@ def make_network(network_purpose, network_type, in_size, hidden, out_size,
 
 class ReplayBuffer:
 
-    def __init__(self, buffer_size, batch_size):
+    def __init__(self, buffer_size, batch_size, device):
         self.memory = collections.deque(maxlen=buffer_size)
         self.batch_size = batch_size
+        self.device = device
         self.experiences = collections.namedtuple("Experience",
                                                   field_names=["state",
                                                                "action",
-                                                               "reward",
                                                                "next_state",
+                                                               "reward",
                                                                "done"])
 
-    def add(self, state, action, reward, next_state, done):
+    def add(self, state, action, next_state, reward, done):
 
-        e = self.experiences(state, action, reward, next_state, done)
+        e = self.experiences(state, action, next_state, reward, done)
         self.memory.append(e)
 
     def sample(self, sample_all=False):
@@ -375,16 +396,13 @@ class ReplayBuffer:
         else:
             experiences = random.sample(self.memory, k=self.batch_size)
 
-        states = torch.from_numpy(np.vstack([e.state.cpu() for e in experiences if e is not None])).float().to(device)
-        actions = torch.from_numpy(np.vstack([e.action for e in experiences if e is not None])).long().to(device)
-        # actions = torch.from_numpy(np.vstack([int(e.action) for e in experiences if e is not None])).long().to(device)
-        rewards = torch.from_numpy(np.vstack([e.reward for e in experiences if e is not None])).float().to(device)
-        next_states = torch.from_numpy(
-            np.vstack([e.next_state.cpu() for e in experiences if e is not None])).float().to(device)
-        dones = torch.from_numpy(np.vstack([e.done for e in experiences if e is not None]).astype(np.uint8)).float().to(
-            device)
+        states = torch.from_numpy(np.stack([e.state for e in experiences if e is not None])).float().to(self.device)
+        actions = torch.LongTensor([e.action for e in experiences if e is not None]).unsqueeze(1).to(self.device)
+        nextStates = torch.from_numpy(np.stack([e.next_state for e in experiences if e is not None])).float().to(self.device)
+        rewards = torch.FloatTensor([e.reward for e in experiences if e is not None]).unsqueeze(1).to(self.device)
+        dones = torch.ByteTensor([e.done for e in experiences if e is not None]).unsqueeze(1).to(self.device)
 
-        return (states, actions, rewards, next_states, dones)
+        return (states, actions, nextStates, rewards, dones)
 
     def __len__(self):
         return len(self.memory)

@@ -130,19 +130,21 @@ class ReinforcementAgent(ValueEstimationAgent):
             NOTE: Do *not* override or call this function
         """
         self.episodeRewards += deltaReward
-        if learn1 and filter is not None:
-            self.update(state,action,nextState,deltaReward)
-            result = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'EVALUATION')))
-            self.update2(state, action, nextState, result)
-        if learn2 and filter is not None:
-            self.update(state,action,nextState,deltaReward)
-            result1, result2 = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'DUAL-EVALUATION')))
-            self.update2(state, action, nextState, result1)
-            self.update3(state, action, nextState, result2)
         if lex and filter is not None:
             violCount = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'VIOL-COUNT')))
+            #reward = [deltaReward, -violCount]  
             reward = [-violCount, deltaReward]
             self.update(state, action, nextState, reward)
+        else:
+            self.update(state,action,nextState,deltaReward)
+            if learn1 and filter is not None:
+                result = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'EVALUATION')))
+                self.update2(state, action, nextState, result)
+            if learn2 and filter is not None:
+                result1, result2 = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'DUAL-EVALUATION')))
+                self.update2(state, action, nextState, result1)
+                self.update3(state, action, nextState, result2)
+        
 
 
     def startEpisode(self):
@@ -173,7 +175,7 @@ class ReinforcementAgent(ValueEstimationAgent):
     def isInTesting(self):
         return not self.isInTraining()
 
-    def __init__(self, actionFn = None, numTraining=100, epsilon=0.5, alpha=0.5, gamma=1, weight=0.0):
+    def __init__(self, actionFn = None, numTraining=100, epsilon=0.05, alpha=0.1, gamma=0.8, weight=0.0):
         """
         actionFn: Function which takes a state and returns the list of legal actions
 

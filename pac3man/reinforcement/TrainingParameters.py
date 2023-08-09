@@ -17,8 +17,13 @@ inconsistent_parameters = {
 class TrainingParameters:
     # dataclass attributes created in __init__ and address by self.
     # TODO - perhaps add validation to check when unnecessary parameters are specified e.g. batch_size for tabular
-    env_name: str  # the str representing the environment, found in src.constants.env_names
-    agent_name: str  # the str representing the agent, found in src.constants.agent_names
+
+    width: int # The width of the environment
+    height: int # The height of the environment
+
+
+    env_name: str = "Pacman" # the str representing the environment, found in src.constants.env_names
+    agent_name: str =  "Agent" # the str representing the agent, found in src.constants.agent_names
     network: str = "DNN"  # The type of network to use within an agent ("DNN" or "CNN")
 
     num_episodes: int = None  # Currently deprecated
@@ -27,16 +32,20 @@ class TrainingParameters:
     test_group_label: str = None  # A label used to identify a batch of experiments
     save_every_n: int = None  # How frequently should copies of the model be saved during training?
 
-    buffer_size: int = int(1e4)  # PyTorch buffer size to use during training
-    batch_size: int = 4  # PyTorch batch size to use during training
+    buffer_size: int = 50000 # PyTorch buffer size to use during training
+    batch_size: int = 128  # PyTorch batch size to use during training
     update_every: int = 4  # After how many interacts should we update the model?
     update_every_eps = 1  # Deprecated
     update_steps: int = 10  # Used by LDQN
 
-    epsilon: float = 0.05  # Hyperparameter used in epsilon-greedy algorithms (and others)
+    epsilon_start: float = 0.9  # Hyperparameter used in epsilon-greedy algorithms (and others)
+    epsilon: float = 0.05 
+    epsilon_decay: float = 10000
     slack: float = 0.001  # Hyperparameter used by lexicographic algorithms
 
     learning_rate: float = 1e-3
+    tau = 0.005 # update rate for target network
+
 
     # AproPo
     lambda_lr_2: float = 0.05
@@ -54,7 +63,21 @@ class TrainingParameters:
     lextab_on_policy: bool = False
 
     # After dataclass attributes are initialised, validate the training parameters
-    # def __post_init__(self):
+    def __post_init__(self):
+        self.buffer_size = int(self.buffer_size)
+        self.batch_size = int(self.batch_size)
+        self.update_every = int(self.update_every)
+        self.update_steps = int(self.update_steps)
+        self.epsilon = float(self.epsilon)
+        self.slack = float(self.slack)
+        self.learning_rate = float(self.learning_rate)
+        self.lambda_lr_2 = float(self.lambda_lr_2)
+        self.alpha = float(self.alpha)
+        self.beta = float(self.beta)
+        self.reward_size = int(self.reward_size)
+        self.constraint = float(self.constraint)
+        self.no_cuda = bool(self.no_cuda)
+        self.lextab_on_policy = bool(self.lextab_on_policy)
         # assert (self.agent_name in agent_names)
         # assert (self.env_name in env_names)
         # assert (self.network in ["CNN", "DNN"])
