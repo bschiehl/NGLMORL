@@ -35,13 +35,19 @@ class DQNLearningAgent(ReinforcementAgent):
     def getAction(self, state, filter=None, train=False, supervise=False):
         permissible_actions = self.getLegalActions(state, filter, train, supervise)
 
-        curr_e = self.epsilon + (self.epsilon_start - self.epsilon) * np.exp(-self.t / self.epsilon_decay)
-
-        if np.random.choice([True, False], p=[curr_e, 1 - curr_e]):
-            return np.random.choice(permissible_actions)
+        curr_e = self.epsilon + (self.epsilon_start - self.epsilon) * np.exp(-self.t / self.epsilon_decay) if self.episodesSoFar < self.numTraining else 0
         
-        act_arr = [int(util.Action(a)) for a in permissible_actions]
-        not_permissible = np.delete(np.arange(self.action_size), act_arr)
+        if np.random.choice([True, False], p=[curr_e, 1 - curr_e]):
+            #return np.random.choice(permissible_actions)
+            random_value = np.random.randint(1, 5) 
+            move = str(util.Action(random_value))
+            self.lastAction = move
+            if move not in permissible_actions:
+                move = Directions.STOP
+            return move
+        
+        #act_arr = [int(util.Action(a)) for a in permissible_actions]
+        #not_permissible = np.delete(np.arange(self.action_size), act_arr)
         
         state = util.getStateMatrices(state)
         state = torch.from_numpy(np.stack(state))
@@ -50,18 +56,34 @@ class DQNLearningAgent(ReinforcementAgent):
     
         Qs = self.model(state).detach().cpu().numpy()[0]
 
-        Qs[not_permissible] = -np.inf
+        #Qs[not_permissible] = -np.inf
         best = np.argwhere(Qs == np.amax(Qs)).flatten()
-        move = np.random.choice(best)
-        return str(util.Action(move))
+        move = np.random.choice(best) + 1
+        move = str(util.Action(move))
+        self.lastAction = move
+        if move not in permissible_actions:
+            move = Directions.STOP
+        return move
 
     def update(self, state, action, nextState, reward):
         done = nextState.data._win or nextState.data._lose
         self.t += 1
         state = util.getStateMatrices(state)
         nextState = util.getStateMatrices(nextState)
-        action = int(util.Action(action))
+        action = int(util.Action(action)) -1
 
+        # if reward > 300:
+        #     reward = 100.
+        # elif reward > 20:
+        #     reward = 50.
+        # elif reward > 0:
+        #     reward = 10.
+        # elif reward < -10:
+        #     reward = -500.
+        # elif reward < 0:
+        #     reward = -1.
+        
+    
         self.memory.add(state, action, nextState, reward, int(done))
 
         if self.t % self.update_every == 0 and len(self.memory) > self.batch_size:
@@ -87,7 +109,7 @@ class DQNLearningAgent(ReinforcementAgent):
         Q_targets = rewards + self.discount * Qs_next * (1 - dones)
 
         loss = F.smooth_l1_loss(Qs, Q_targets).to(self.device)
-        print(loss.item())
+        
         self.optimizer.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_value_(self.model.parameters(), 100)
@@ -95,9 +117,14 @@ class DQNLearningAgent(ReinforcementAgent):
 
         self.model.eval()
 
-
+#change list
+# 1. NN architecture
+# 2. forbidden actions --> stop
+# 3. update after every state transition
+# 4. change reward values
+# 7. remove stop from available actions (update changed)
 class PacmanDQNAgent(DQNLearningAgent):
-    def __init__(self, train_params, action_size=5, discount=0.99, **args):
+    def __init__(self, train_params, action_size=4, discount=0.99, **args):
         super().__init__(train_params, action_size, discount, **args)
         self.model = PacmanCNN(train_params.width, train_params.height).to(self.device)
         self.target_model = PacmanCNN(train_params.width, train_params.height).to(self.device)
@@ -107,7 +134,7 @@ class PacmanDQNAgent(DQNLearningAgent):
     def getAction(self, state, filter=None, train=False, supervise=False):
         copy = state.deepCopy()
         action = DQNLearningAgent.getAction(self, state, filter, train, supervise)
-        self.doAction(copy, action)
+        self.lastState = copy
         return action
 
         

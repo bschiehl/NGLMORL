@@ -13,6 +13,7 @@
 
 
 from game import Directions, Agent, Actions
+from torch.utils.tensorboard import SummaryWriter
 
 import random,util,time
 
@@ -130,20 +131,22 @@ class ReinforcementAgent(ValueEstimationAgent):
             NOTE: Do *not* override or call this function
         """
         self.episodeRewards += deltaReward
-        if lex and filter is not None:
-            violCount = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'VIOL-COUNT')))
-            #reward = [deltaReward, -violCount]  
-            reward = [-violCount, deltaReward]
-            self.update(state, action, nextState, reward)
-        else:
-            self.update(state,action,nextState,deltaReward)
-            if learn1 and filter is not None:
-                result = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'EVALUATION')))
-                self.update2(state, action, nextState, result)
-            if learn2 and filter is not None:
-                result1, result2 = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'DUAL-EVALUATION')))
-                self.update2(state, action, nextState, result1)
-                self.update3(state, action, nextState, result2)
+        if self.episodesSoFar < self.numTraining:
+            if lex and filter is not None:
+                violCount = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'VIOL-COUNT')))
+                #reward = [deltaReward, -violCount]
+                reward = [-violCount, deltaReward]
+                self.episodeViolPenalty -= violCount
+                self.update(state, action, nextState, reward)
+            else:
+                self.update(state,action,nextState,deltaReward)
+                if learn1 and filter is not None:
+                    result = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'EVALUATION')))
+                    self.update2(state, action, nextState, result)
+                if learn2 and filter is not None:
+                    result1, result2 = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'DUAL-EVALUATION')))
+                    self.update2(state, action, nextState, result1)
+                    self.update3(state, action, nextState, result2)
         
 
 
@@ -154,6 +157,7 @@ class ReinforcementAgent(ValueEstimationAgent):
         self.lastState = None
         self.lastAction = None
         self.episodeRewards = 0.0
+        self.episodeViolPenalty = 0.0
 
     def stopEpisode(self):
         """
@@ -163,6 +167,7 @@ class ReinforcementAgent(ValueEstimationAgent):
             self.accumTrainRewards += self.episodeRewards
         else:
             self.accumTestRewards += self.episodeRewards
+        self.lastWindowAccumViolPenalties += self.episodeViolPenalty
         self.episodesSoFar += 1
         if self.episodesSoFar >= self.numTraining:
             # Take off the training wheels
@@ -175,7 +180,7 @@ class ReinforcementAgent(ValueEstimationAgent):
     def isInTesting(self):
         return not self.isInTraining()
 
-    def __init__(self, actionFn = None, numTraining=100, epsilon=0.05, alpha=0.1, gamma=0.8, weight=0.0):
+    def __init__(self, actionFn = None, numTraining=100, epsilon=0.05, alpha=0.2, gamma=0.8, weight=0.0):
         """
         actionFn: Function which takes a state and returns the list of legal actions
 
@@ -190,11 +195,14 @@ class ReinforcementAgent(ValueEstimationAgent):
         self.episodesSoFar = 0
         self.accumTrainRewards = 0.0
         self.accumTestRewards = 0.0
+        self.lastWindowAccumViolPenalties = 0.0
         self.numTraining = int(numTraining)
         self.epsilon = float(epsilon)
         self.alpha = float(alpha)
         self.discount = float(gamma)
         self.weight = float(weight)
+        self.writer = SummaryWriter()
+
 
     ################################
     # Controls needed for Crawler  #
@@ -234,12 +242,12 @@ class ReinforcementAgent(ValueEstimationAgent):
         if self.episodesSoFar == 0:
             print('Beginning %d episodes of Training' % (self.numTraining))
 
-    def final(self, state):
+    def final(self, state, filter=None, learn1=False, learn2=False, lex=False):
         """
           Called by Pacman game at the terminal state
         """
         deltaReward = state.getScore() - self.lastState.getScore()
-        self.observeTransition(self.lastState, self.lastAction, state, deltaReward)
+        self.observeTransition(self.lastState, self.lastAction, state, deltaReward, filter, learn1, learn2, lex)
         self.stopEpisode()
 
         # Make sure we have this var
@@ -259,14 +267,22 @@ class ReinforcementAgent(ValueEstimationAgent):
                        self.episodesSoFar,self.numTraining))
                 print('\tAverage Rewards over all training: %.2f' % (
                         trainAvg))
+                self.writer.add_scalar('Score/train', windowAvg, self.episodesSoFar)
+                if lex:
+                    self.writer.add_scalar('Violations/train', self.lastWindowAccumViolPenalties, self.episodesSoFar)
             else:
                 testAvg = float(self.accumTestRewards) / (self.episodesSoFar - self.numTraining)
                 print('\tCompleted %d test episodes' % (self.episodesSoFar - self.numTraining))
                 print('\tAverage Rewards over testing: %.2f' % testAvg)
+                self.writer.add_scalar('Score/test', windowAvg, self.episodesSoFar - self.numTraining)
+                if lex:
+                    self.writer.add_scalar('Violations/test', self.lastWindowAccumViolPenalties, self.episodesSoFar - self.numTraining)
+            #self.writer.flush()
             print('\tAverage Rewards for last %d episodes: %.2f'  % (
                     NUM_EPS_UPDATE,windowAvg))
             print('\tEpisode took %.2f seconds' % (time.time() - self.episodeStartTime))
             self.lastWindowAccumRewards = 0.0
+            self.lastWindowAccumViolPenalties = 0.0
             self.episodeStartTime = time.time()
 
         if self.episodesSoFar == self.numTraining:

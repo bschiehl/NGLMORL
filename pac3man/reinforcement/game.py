@@ -750,7 +750,7 @@ class Game:
             if "final" in dir( agent ) :
                 try:
                     self.mute(agentIndex)
-                    agent.final( self.state )
+                    agent.final( self.state, self.filter, self.learn1, self.learn2, self.lex)
                     self.unmute()
                 except Exception as data:
                     if not self.catchExceptions: raise

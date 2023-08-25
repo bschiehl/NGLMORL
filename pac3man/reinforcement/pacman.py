@@ -569,14 +569,13 @@ def readCommand( argv ):
     parser.add_option('--norm', dest='norm', help=default('Specify norm set: broken, busy, hungry, vegan, vegetarian'),
                       default=None)
     parser.add_option('--reason', dest='reason', help=default('Specify reasoner type: DDPL'), default=None)
-
     parser.add_option('--rec', dest='rec', help=default('Would you like to save a record of tests run? Input file name.'),
                       default=None)
     parser.add_option('--supervise', action='store_true', dest='supervise', help='Use normative supervisor?', default=False)
     parser.add_option('--learn', action='store_true', dest='learn1', help='Learn with norms - only choose with MORL agent', default=False)
     parser.add_option('--sublearn', action='store_true', dest='learn2',
                       help='Learn with sub ideal reward function; only select for SubIdealAgent', default=False)
-    parser.add_option('--lex', action='store_true', dest='lex', help='Use NGLMORL - only choose with lexAgent', default=False)
+    parser.add_option('--lex', action='store_true', dest='lex', help='Use NGLMORL - only choose with lexAgent or deepAgent', default=False)
     parser.add_option('--lexArgs', dest='lexArgs', help='Comma separated hyperparameters for LexAgents')
     parser.add_option('--partial', action='store_true', dest='partial', help='Learn with a partial MDP', default=False)
     #parser.add_option('--punish', type='int', dest='punish', help=default('Punishment for violation of norm base.'), default=0)
@@ -750,7 +749,8 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
             f.close()
     if filt is not None:
         filt.terminate_server()
-
+    if hasattr(pacman, 'writer'):
+        pacman.writer.close()
     if (numGames-numTraining) > 0:
         # FOR RECORDING RESULTS
         if rec is not None:

@@ -26,21 +26,21 @@ class TrainingParameters:
     agent_name: str =  "Agent" # the str representing the agent, found in src.constants.agent_names
     network: str = "DNN"  # The type of network to use within an agent ("DNN" or "CNN")
 
-    num_episodes: int = None  # Currently deprecated
+    num_training: int = 9000
     num_interacts: int = None  # The number of interactions between agent and environment during training
 
     test_group_label: str = None  # A label used to identify a batch of experiments
     save_every_n: int = None  # How frequently should copies of the model be saved during training?
 
-    buffer_size: int = 50000 # PyTorch buffer size to use during training
-    batch_size: int = 128  # PyTorch batch size to use during training
-    update_every: int = 4  # After how many interacts should we update the model?
+    buffer_size: int = 1000 # PyTorch buffer size to use during training
+    batch_size: int = 32  # PyTorch batch size to use during training
+    update_every: int = 1  # After how many interacts should we update the model?
     update_every_eps = 1  # Deprecated
     update_steps: int = 10  # Used by LDQN
 
-    epsilon_start: float = 0.9  # Hyperparameter used in epsilon-greedy algorithms (and others)
-    epsilon: float = 0.05 
-    epsilon_decay: float = 10000
+    epsilon_start: float = 1.0  # Hyperparameter used in epsilon-greedy algorithms (and others)
+    epsilon: float = 0.1
+    epsilon_decay: float = num_training * 2
     slack: float = 0.001  # Hyperparameter used by lexicographic algorithms
 
     learning_rate: float = 1e-3
