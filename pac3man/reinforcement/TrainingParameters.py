@@ -52,7 +52,7 @@ class TrainingParameters:
     alpha: float = 1
     beta: float = 0.95
 
-    no_cuda: bool = True
+    no_cuda: bool = False
 
     reward_size: int = 2
     constraint: int = 0.1
