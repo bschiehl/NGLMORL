@@ -142,7 +142,7 @@ src/safety-gym/
 /pac3man/reinforcement/test_cases/
 *.csv
 /.vscode/
-/.idea/
+*/.idea/
 com/
 spindle/
 myactivate.sh
@@ -152,3 +152,4 @@ runs/
 DQN.py
 pacmanDQN_Agents.py
 pacmanUtils.py
+*.iml

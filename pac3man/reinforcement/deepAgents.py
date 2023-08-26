@@ -26,7 +26,7 @@ class DQNLearningAgent(ReinforcementAgent):
         self.target_model = None
         self.optimizer = None
 
-        if torch.cuda.is_available() and not self.no_cuda:
+        if torch.cuda.is_available() and not train_params.no_cuda:
             self.device = torch.device('cuda')
         else:
             self.device = torch.device('cpu')
