@@ -72,16 +72,16 @@ class DQNLearningAgent(ReinforcementAgent):
         nextState = util.getStateMatrices(nextState)
         action = int(util.Action(action)) -1
 
-        # if reward > 300:
-        #     reward = 100.
-        # elif reward > 20:
-        #     reward = 50.
-        # elif reward > 0:
-        #     reward = 10.
-        # elif reward < -10:
-        #     reward = -500.
-        # elif reward < 0:
-        #     reward = -1.
+        if reward > 300:
+            reward = 100.
+        elif reward > 20:
+            reward = 50.
+        elif reward > 0:
+            reward = 10.
+        elif reward < -10:
+            reward = -500.
+        elif reward < 0:
+            reward = -1.
         
     
         self.memory.add(state, action, nextState, reward, int(done))
