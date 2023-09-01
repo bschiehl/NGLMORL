@@ -603,7 +603,7 @@ def readCommand( argv ):
         args['numTraining'] = options.numTraining
         if 'numTraining' not in agentOpts: agentOpts['numTraining'] = options.numTraining
     if options.lex:
-        train_params = TrainingParameters(args['layout'].width, args['layout'].height, **lexOpts)
+        train_params = TrainingParameters(args['layout'].width, args['layout'].height, num_training= options.numTraining, **lexOpts)
         pacman = pacmanType(train_params, **agentOpts)
     else:
         pacman = pacmanType(**agentOpts) # Instantiate Pacman with agentArgs

@@ -277,10 +277,12 @@ class ReinforcementAgent(ValueEstimationAgent):
                 self.writer.add_scalar('Score/test', windowAvg, self.episodesSoFar - self.numTraining)
                 if lex:
                     self.writer.add_scalar('Violations/test', self.lastWindowAccumViolPenalties, self.episodesSoFar - self.numTraining)
-            #self.writer.flush()
+            
             print('\tAverage Rewards for last %d episodes: %.2f'  % (
                     NUM_EPS_UPDATE,windowAvg))
             print('\tEpisode took %.2f seconds' % (time.time() - self.episodeStartTime))
+            if hasattr(self, 'save_model'):
+                self.save_model()
             self.lastWindowAccumRewards = 0.0
             self.lastWindowAccumViolPenalties = 0.0
             self.episodeStartTime = time.time()

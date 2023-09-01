@@ -38,17 +38,13 @@ class DQNLearningAgent(ReinforcementAgent):
         curr_e = self.epsilon + (self.epsilon_start - self.epsilon) * np.exp(-self.t / self.epsilon_decay) if self.episodesSoFar < self.numTraining else 0
         
         if np.random.choice([True, False], p=[curr_e, 1 - curr_e]):
-            #return np.random.choice(permissible_actions)
-            random_value = np.random.randint(1, 5) 
+            random_value = np.random.randint(1, 1 + self.action_size) 
             move = str(util.Action(random_value))
             self.lastAction = move
             if move not in permissible_actions:
                 move = Directions.STOP
             return move
-        
-        #act_arr = [int(util.Action(a)) for a in permissible_actions]
-        #not_permissible = np.delete(np.arange(self.action_size), act_arr)
-        
+
         state = util.getStateMatrices(state)
         state = torch.from_numpy(np.stack(state))
         state = state.unsqueeze(0).float()
@@ -56,7 +52,6 @@ class DQNLearningAgent(ReinforcementAgent):
     
         Qs = self.model(state).detach().cpu().numpy()[0]
 
-        #Qs[not_permissible] = -np.inf
         best = np.argwhere(Qs == np.amax(Qs)).flatten()
         move = np.random.choice(best) + 1
         move = str(util.Action(move))

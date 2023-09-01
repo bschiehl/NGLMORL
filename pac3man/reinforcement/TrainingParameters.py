@@ -36,7 +36,7 @@ class TrainingParameters:
     batch_size: int = 32  # PyTorch batch size to use during training
     update_every: int = 1  # After how many interacts should we update the model?
     update_every_eps = 1  # Deprecated
-    update_steps: int = 10  # Used by LDQN
+    update_steps: int = 1  # Used by LDQN
 
     epsilon_start: float = 1.0  # Hyperparameter used in epsilon-greedy algorithms (and others)
     epsilon: float = 0.1

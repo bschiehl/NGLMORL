@@ -10,9 +10,15 @@ import torch.optim as optim
 
 from torch.distributions import Categorical
 
-class LDQNLearningAgent(Agent):
-    def __init__(self, in_size, action_size, hidden, train_params):
+# LexDQN
+
+class LDQNLearningAgent(ReinforcementAgent):
+    def __init__(self, train_params, action_size, discount, **args):
+        ReinforcementAgent.__init__(self, **args)
         self.update_steps = train_params.update_steps
+        self.epsilon_start = train_params.epsilon_start
+        self.epsilon_decay = train_params.epsilon_decay
+        self.tau = train_params.tau
         self.epsilon = train_params.epsilon
         self.buffer_size = train_params.buffer_size
         self.batch_size = train_params.batch_size
@@ -20,56 +26,148 @@ class LDQNLearningAgent(Agent):
         self.update_every = train_params.update_every
         self.slack = train_params.slack
         self.reward_size = train_params.reward_size
-        self.network = train_params.network
-
-        self.t = 0
-        self.discount = 0.99
-
-        self.actions = list(range(action_size))
+        self.model = None
+        self.target_model = None
+        self.optimizer = None
         self.action_size = action_size
-        if self.network == 'DNN':
-            self.model = DNN(in_size, (self.reward_size, action_size), hidden)
-        elif self.network == 'CNN':
-            self.model = CNN(int((in_size / 3) ** 0.5), channels=3, 
-                             out_size=(self.reward_size, action_size), convs=hidden, hidden=hidden)
-        else:
-            print('invalid network specification')
-            assert False
-
-        self.memory = ReplayBuffer(self.buffer_size, self.batch_size)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=train_params.learning_rate)
+        self.t = 0
+        self.discount = discount
 
         if torch.cuda.is_available() and not self.no_cuda:
-            self.model.cuda()
+            self.device = torch.device('cuda')
+        else:
+            self.device = torch.device('cpu')
+        self.memory = ReplayBuffer(self.buffer_size, self.batch_size, self.device)
 
 
     def getAction(self, state, filter=None, train=False, supervise=False):
-        raise NotImplementedError()
+        permissible_actions = self.getLegalActions(state, filter, train, supervise)
 
-    def update(self, state, action, nextState, reward):
-        raise NotImplementedError()
-
-    def getPolicy(self, state):
-        raise NotImplementedError()
-
-
-class PacmanLDQNAgent(LDQNLearningAgent, PacmanAgent):
-    def __init__(self, **args):
-       # LDQNLearningAgent.__init__(self, in_size=, action_size=5, hidden=, **args)
-       raiseNotDefined()
-
+        curr_e = self.epsilon + (self.epsilon_start - self.epsilon) * np.exp(-self.t / self.epsilon_decay) if self.episodesSoFar < self.numTraining else 0
         
-    def permissible_actions(self, Q):
-        permissible_actions = self.actions
+        if np.random.choice([True, False], p=[curr_e, 1 - curr_e]):
+            random_value = np.random.randint(1, 1 + self.action_size) 
+            move = str(util.Action(random_value))
+            self.lastAction = move
+            if move not in permissible_actions:
+                move = Directions.STOP
+            return move
+
+        state = util.getStateMatrices(state)
+        state = torch.from_numpy(np.stack(state))
+        state = state.unsqueeze(0).float()
+        state = state.to(self.device)
+    
+        Qs = self.model(state).detach().cpu().numpy()[0]
+
+        optimal = self.optimal_actions(Qs)
+
+        move = np.random.choice(optimal) + 1
+        move = str(util.Action(move))
+        self.lastAction = move
+        if move not in permissible_actions:
+            move = Directions.STOP
+        return move
+    
+    def optimal_actions(self, Q):
+        optimal_actions = range(self.action_size)
 
         for i in range(self.reward_size):
             Qi = Q[i, :]
-            m = max([Qi[a] for a in permissible_actions])
+            m = max([Qi[a] for a in optimal_actions])
             r = self.slack
-            permissible_actions = [a for a in permissible_actions if Qi[a] >= m - r * abs(m)]
+            optimal_actions = [a for a in optimal_actions if Qi[a] >= m - r * abs(m)]
+        
+        return optimal_actions # from 0
+        
+    def lexmax(self, Q):
+        a = self.optimal_actions(Q)[0]
+        return Q[:, a]
+
+    def update(self, state, action, nextState, reward):
+        done = nextState.data._win or nextState.data._lose
+        self.t += 1
+        state = util.getStateMatrices(state)
+        nextState = util.getStateMatrices(nextState)
+        action = int(util.Action(action)) -1
+
+        # if reward > 300:
+        #     reward = 100.
+        # elif reward > 20:
+        #     reward = 50.
+        # elif reward > 0:
+        #     reward = 10.
+        # elif reward < -10:
+        #     reward = -500.
+        # elif reward < 0:
+        #     reward = -1.
+        
+    
+        self.memory.add(state, action, nextState, reward, int(done))
+
+        if self.t % self.update_every == 0 and len(self.memory) > self.batch_size:
+            experiences = self.memory.sample()
+            for _ in range(self.update_steps):
+                self.learn(experiences)
+            target_model_state_dict = self.target_model.state_dict()
+            policy_model_state_dict = self.model.state_dict()
+            for key in policy_model_state_dict:
+                target_model_state_dict[key] = self.tau * policy_model_state_dict[key] + (1 - self.tau) * target_model_state_dict[key]
+            self.target_model.load_state_dict(target_model_state_dict)
+
+    def learn(self, experiences):
+        states, actions, nextStates, rewards, dones = experiences
+        rewards = rewards.squeeze()
+
+        self.model.train()
+        Qs = self.model(states)
+        idx = torch.cat((actions, actions), 1).reshape(-1, self.reward_size, 1)
+        pred = Qs.gather(2, idx).squeeze()
+
+        with torch.no_grad():
+            pred_next = self.target_model(nextStates).detach()
+            next_values = torch.stack([self.lexmax(Q) for Q in torch.unbind(pred_next, dim=0)], dim=0)
+
+
+        Q_targets = rewards + self.discount * next_values * (1 - dones)
+
+
+        loss = F.smooth_l1_loss(pred, Q_targets).to(self.device)
+        
+        self.optimizer.zero_grad()
+        loss.backward()
+        torch.nn.utils.clip_grad_value_(self.model.parameters(), 100)
+        self.optimizer.step()
+
+        self.model.eval()
+
+    def save_model(self, path=''):
+        torch.save(self.model.state_dict(), '{}policy-model.pt'.format(path))
+        torch.save(self.target_model.state_dict(), '{}target-model.pt'.format(path))
+
+
+
+
+
+class PacmanLDQNAgent(LDQNLearningAgent):
+    def __init__(self, train_params, action_size=4, discount=0.99, **args):
+       LDQNLearningAgent.__init__(self, train_params, action_size, discount, **args)
+       self.model = PacmanCNN(train_params.width, train_params.height, num_actions= action_size, reward_size=train_params.reward_size).to(self.device)
+       self.target_model = PacmanCNN(train_params.width, train_params.height, num_actions= action_size, reward_size=train_params.reward_size).to(self.device)
+       self.target_model.load_state_dict(self.model.state_dict())
+       self.optimizer = optim.AdamW(self.model.parameters(), lr=train_params.learning_rate, amsgrad=True)
+       if torch.cuda.is_available() and not self.no_cuda:
+           self.model.cuda()
+
 
     def getAction(self, state, filter=None, train=False, supervise=False):
-        raise NotImplementedError()
+        copy = state.deepCopy()
+        action = LDQNLearningAgent.getAction(self, state, filter, train, supervise)
+        self.lastState = copy
+        return action
+    
+
+# Lexicographic Tabular Q-learning
 
 
 class LTQLearningAgent(ReinforcementAgent):
@@ -245,6 +343,7 @@ class PacmanLTQAgent(LTQLearningAgent):
         self.doAction(state,action)
         return action
 
+# Lexicographic policy-based reinforcement learning
 
 class LA2CLearningAgent(Agent):
     def __init__(self, **args):
