@@ -599,11 +599,11 @@ def readCommand( argv ):
     pacmanType = loadAgent(options.pacman, noKeyboard)
     agentOpts = parseAgentArgs(options.agentArgs)
     lexOpts = parseAgentArgs(options.lexArgs)
-    if options.numTraining > 0:
+    if options.numTraining >= 0:
         args['numTraining'] = options.numTraining
         if 'numTraining' not in agentOpts: agentOpts['numTraining'] = options.numTraining
     if options.lex:
-        train_params = TrainingParameters(args['layout'].width, args['layout'].height, num_training= options.numTraining, **lexOpts)
+        train_params = TrainingParameters(args['layout'].width, args['layout'].height, options.numTraining, 2 * options.numTraining, **lexOpts)
         pacman = pacmanType(train_params, **agentOpts)
     else:
         pacman = pacmanType(**agentOpts) # Instantiate Pacman with agentArgs

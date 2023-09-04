@@ -280,6 +280,8 @@ class ReinforcementAgent(ValueEstimationAgent):
             
             print('\tAverage Rewards for last %d episodes: %.2f'  % (
                     NUM_EPS_UPDATE,windowAvg))
+            print('\tGhosts eaten in the last %d episodes: %.2f'  % (
+                    NUM_EPS_UPDATE, -1 * self.lastWindowAccumViolPenalties))
             print('\tEpisode took %.2f seconds' % (time.time() - self.episodeStartTime))
             if hasattr(self, 'save_model'):
                 self.save_model()

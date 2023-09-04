@@ -91,17 +91,19 @@ class LDQNLearningAgent(ReinforcementAgent):
         nextState = util.getStateMatrices(nextState)
         action = int(util.Action(action)) -1
 
-        # if reward > 300:
-        #     reward = 100.
-        # elif reward > 20:
-        #     reward = 50.
-        # elif reward > 0:
-        #     reward = 10.
-        # elif reward < -10:
-        #     reward = -500.
-        # elif reward < 0:
-        #     reward = -1.
+        if reward[-1] > 300:
+            reward[-1] = 100.
+        elif reward[-1] > 20:
+            reward[-1] = 50.
+        elif reward[-1] > 0:
+            reward[-1] = 10.
+        elif reward[-1] < -10:
+            reward[-1] = -500.
+        elif reward[-1] < 0:
+            reward[-1] = -1.
         
+        if reward[0] < 0:
+            reward[0] = -100.
     
         self.memory.add(state, action, nextState, reward, int(done))
 
@@ -141,10 +143,13 @@ class LDQNLearningAgent(ReinforcementAgent):
 
         self.model.eval()
 
-    def save_model(self, path=''):
+    def save_model(self, path='models/'):
         torch.save(self.model.state_dict(), '{}policy-model.pt'.format(path))
         torch.save(self.target_model.state_dict(), '{}target-model.pt'.format(path))
 
+    def load_model(self, path='models/LDQN_3000_s001/'):
+        self.model.load_state_dict(torch.load('{}policy-model.pt'.format(path)))
+        self.target_model.load_state_dict(torch.load('{}target-model.pt'.format(path)))
 
 
 
@@ -156,6 +161,9 @@ class PacmanLDQNAgent(LDQNLearningAgent):
        self.target_model = PacmanCNN(train_params.width, train_params.height, num_actions= action_size, reward_size=train_params.reward_size).to(self.device)
        self.target_model.load_state_dict(self.model.state_dict())
        self.optimizer = optim.AdamW(self.model.parameters(), lr=train_params.learning_rate, amsgrad=True)
+       if train_params.trained:
+           self.load_model()
+           print("Loaded model")
        if torch.cuda.is_available() and not self.no_cuda:
            self.model.cuda()
 
@@ -172,7 +180,7 @@ class PacmanLDQNAgent(LDQNLearningAgent):
 
 class LTQLearningAgent(ReinforcementAgent):
     def __init__(self, train_params, initialisation, actions, double=False, discount=0.99, **args):
-        self.slack = train_params.slack
+        self.slack = train_params.slack # 0.001 in experiments
         ReinforcementAgent.__init__(self, **args)
 
         self.actions=actions

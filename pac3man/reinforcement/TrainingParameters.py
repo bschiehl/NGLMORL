@@ -20,13 +20,14 @@ class TrainingParameters:
 
     width: int # The width of the environment
     height: int # The height of the environment
-
+    num_training: int
+    epsilon_decay: float
 
     env_name: str = "Pacman" # the str representing the environment, found in src.constants.env_names
     agent_name: str =  "Agent" # the str representing the agent, found in src.constants.agent_names
     network: str = "DNN"  # The type of network to use within an agent ("DNN" or "CNN")
 
-    num_training: int = 9000
+    
     num_interacts: int = None  # The number of interactions between agent and environment during training
 
     test_group_label: str = None  # A label used to identify a batch of experiments
@@ -40,12 +41,13 @@ class TrainingParameters:
 
     epsilon_start: float = 1.0  # Hyperparameter used in epsilon-greedy algorithms (and others)
     epsilon: float = 0.1
-    epsilon_decay: float = num_training * 2
+    
     slack: float = 0.001  # Hyperparameter used by lexicographic algorithms
 
     learning_rate: float = 1e-3
     tau = 0.005 # update rate for target network
 
+    trained = False # load a trained model
 
     # AproPo
     lambda_lr_2: float = 0.05
