@@ -292,3 +292,9 @@ class ReinforcementAgent(ValueEstimationAgent):
         if self.episodesSoFar == self.numTraining:
             msg = 'Training Done (turning off epsilon and alpha)'
             print('%s\n%s' % (msg,'-' * len(msg)))
+
+        if hasattr(self, 'episodeLosses'):
+            if len(self.episodeLosses) > 0:
+                avgLoss = sum(self.episodeLosses) / len(self.episodeLosses)
+                self.writer.add_scalar('Loss/train', avgLoss, self.episodesSoFar)
+                self.episodeLosses = []

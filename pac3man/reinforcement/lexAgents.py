@@ -32,6 +32,7 @@ class LDQNLearningAgent(ReinforcementAgent):
         self.action_size = action_size
         self.t = 0
         self.discount = discount
+        self.episodeLosses = []
 
         if torch.cuda.is_available() and not self.no_cuda:
             self.device = torch.device('cuda')
@@ -130,11 +131,10 @@ class LDQNLearningAgent(ReinforcementAgent):
             pred_next = self.target_model(nextStates).detach()
             next_values = torch.stack([self.lexmax(Q) for Q in torch.unbind(pred_next, dim=0)], dim=0)
 
-
         Q_targets = rewards + self.discount * next_values * (1 - dones)
 
-
         loss = F.smooth_l1_loss(pred, Q_targets).to(self.device)
+        self.episodeLosses.append(loss.item())
         
         self.optimizer.zero_grad()
         loss.backward()

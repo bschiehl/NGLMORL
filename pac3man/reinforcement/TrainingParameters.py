@@ -42,9 +42,9 @@ class TrainingParameters:
     epsilon_start: float = 1.0  # Hyperparameter used in epsilon-greedy algorithms (and others)
     epsilon: float = 0.1
     
-    slack: float = 0.001  # Hyperparameter used by lexicographic algorithms
+    slack: float = 1e-3 # Hyperparameter used by lexicographic algorithms
 
-    learning_rate: float = 1e-3
+    learning_rate: float = 1e-4
     tau = 0.005 # update rate for target network
 
     trained = False # load a trained model
