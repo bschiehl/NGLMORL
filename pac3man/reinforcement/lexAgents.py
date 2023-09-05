@@ -92,19 +92,19 @@ class LDQNLearningAgent(ReinforcementAgent):
         nextState = util.getStateMatrices(nextState)
         action = int(util.Action(action)) -1
 
-        if reward[-1] > 300:
-            reward[-1] = 100.
-        elif reward[-1] > 20:
-            reward[-1] = 50.
-        elif reward[-1] > 0:
-            reward[-1] = 10.
-        elif reward[-1] < -10:
-            reward[-1] = -500.
-        elif reward[-1] < 0:
-            reward[-1] = -1.
+        # if reward[-1] > 300:
+        #     reward[-1] = 100.
+        # elif reward[-1] > 20:
+        #     reward[-1] = 50.
+        # elif reward[-1] > 0:
+        #     reward[-1] = 10.
+        # elif reward[-1] < -10:
+        #     reward[-1] = -500.
+        # elif reward[-1] < 0:
+        #     reward[-1] = -1.
         
-        if reward[0] < 0:
-            reward[0] = -100.
+        # if reward[0] < 0:
+        #     reward[0] = -100.
     
         self.memory.add(state, action, nextState, reward, int(done))
 
