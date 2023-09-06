@@ -44,7 +44,7 @@ class TrainingParameters:
     
     slack: float = 1e-3 # Hyperparameter used by lexicographic algorithms
 
-    learning_rate: float = 1e-4
+    learning_rate: float = 1e-3
     tau = 0.005 # update rate for target network
 
     trained = False # load a trained model

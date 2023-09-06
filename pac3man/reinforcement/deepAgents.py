@@ -25,6 +25,7 @@ class DQNLearningAgent(ReinforcementAgent):
         self.model = None
         self.target_model = None
         self.optimizer = None
+        self.episodeLosses = []
 
         if torch.cuda.is_available() and not train_params.no_cuda:
             self.device = torch.device('cuda')
@@ -104,6 +105,7 @@ class DQNLearningAgent(ReinforcementAgent):
         Q_targets = rewards + self.discount * Qs_next * (1 - dones)
 
         loss = F.smooth_l1_loss(Qs, Q_targets).to(self.device)
+        self.episodeLosses.append(loss.item())
         
         self.optimizer.zero_grad()
         loss.backward()
