@@ -43,15 +43,17 @@ class LDQNLearningAgent(ReinforcementAgent):
 
     def getAction(self, state, filter=None, train=False, supervise=False):
         permissible_actions = self.getLegalActions(state, filter, train, supervise)
-
+        permissible_actions.remove(Directions.STOP)
         curr_e = self.epsilon + (self.epsilon_start - self.epsilon) * np.exp(-self.t / self.epsilon_decay) if self.episodesSoFar < self.numTraining else 0
-        
+    
         if np.random.choice([True, False], p=[curr_e, 1 - curr_e]):
-            random_value = np.random.randint(1, 1 + self.action_size) 
-            move = str(util.Action(random_value))
+            #random_value = np.random.randint(1, 1 + self.action_size) 
+            #move = str(util.Action(random_value))
+            
+            move = np.random.choice(permissible_actions)
             self.lastAction = move
-            if move not in permissible_actions:
-                move = Directions.STOP
+            #if move not in permissible_actions:
+            #    move = Directions.STOP
             return move
 
         state = util.getStateMatrices(state)
@@ -60,14 +62,17 @@ class LDQNLearningAgent(ReinforcementAgent):
         state = state.to(self.device)
     
         Qs = self.model(state).detach().cpu().numpy()[0]
+        permissible_actions = np.array([int(util.Action(a)) for a in permissible_actions]) -1
+        not_permissible = np.delete(range(self.action_size), permissible_actions)
+        Qs[:, not_permissible] = -np.inf
 
         optimal = self.optimal_actions(Qs)
 
         move = np.random.choice(optimal) + 1
         move = str(util.Action(move))
         self.lastAction = move
-        if move not in permissible_actions:
-            move = Directions.STOP
+        #if move not in permissible_actions:
+        #    move = Directions.STOP
         return move
     
     def optimal_actions(self, Q):
@@ -92,19 +97,21 @@ class LDQNLearningAgent(ReinforcementAgent):
         nextState = util.getStateMatrices(nextState)
         action = int(util.Action(action)) -1
 
-        # if reward[-1] > 300:
-        #     reward[-1] = 100.
-        # elif reward[-1] > 20:
-        #     reward[-1] = 50.
-        # elif reward[-1] > 0:
-        #     reward[-1] = 10.
-        # elif reward[-1] < -10:
-        #     reward[-1] = -500.
-        # elif reward[-1] < 0:
-        #     reward[-1] = -1.
+        if reward[-1] > 300:
+            reward[-1] = 100.
+        elif reward[-1] > 20:
+            reward[-1] = 50.
+        elif reward[-1] > 0:
+            reward[-1] = 10.
+        elif reward[-1] < -10:
+            reward[-1] = -500.
+        elif reward[-1] < 0:
+            reward[-1] = -1.
         
-        # if reward[0] < 0:
-        #     reward[0] = -100.
+        if reward[0] < 0:
+            reward[0] = -100.
+        else:
+            reward[0] = -1.
     
         self.memory.add(state, action, nextState, reward, int(done))
 
@@ -147,7 +154,7 @@ class LDQNLearningAgent(ReinforcementAgent):
         torch.save(self.model.state_dict(), '{}policy-model.pt'.format(path))
         torch.save(self.target_model.state_dict(), '{}target-model.pt'.format(path))
 
-    def load_model(self, path='models/LDQN_3000_s001/'):
+    def load_model(self, path='models/LDQN_3000_s001_RS/'):
         self.model.load_state_dict(torch.load('{}policy-model.pt'.format(path)))
         self.target_model.load_state_dict(torch.load('{}target-model.pt'.format(path)))
 
