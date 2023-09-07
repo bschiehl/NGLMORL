@@ -134,8 +134,7 @@ class ReinforcementAgent(ValueEstimationAgent):
         if self.episodesSoFar < self.numTraining:
             if lex and filter is not None:
                 violCount = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'VIOL-COUNT')))
-                reward = [deltaReward, -violCount]
-                #reward = [-violCount, deltaReward]
+                reward = [-violCount, deltaReward]
                 self.episodeViolPenalty -= violCount
                 self.update(state, action, nextState, reward)
             else:
@@ -280,7 +279,7 @@ class ReinforcementAgent(ValueEstimationAgent):
             
             print('\tAverage Rewards for last %d episodes: %.2f'  % (
                     NUM_EPS_UPDATE,windowAvg))
-            print('\tGhosts eaten in the last %d episodes: %.2f'  % (
+            print('\tPenalties incurred in the last %d episodes: %.2f'  % (
                     NUM_EPS_UPDATE, -1 * self.lastWindowAccumViolPenalties))
             print('\tEpisode took %.2f seconds' % (time.time() - self.episodeStartTime))
             if hasattr(self, 'save_model'):
