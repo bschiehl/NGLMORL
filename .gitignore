@@ -141,7 +141,7 @@ src/safety-gym/
 /lmorl/
 /pac3man/reinforcement/test_cases/
 *.csv
-/.vscode/
+.vscode/
 */.idea/
 com/
 spindle/

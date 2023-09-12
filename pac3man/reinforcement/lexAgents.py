@@ -147,8 +147,6 @@ class LDQNLearningAgent(ReinforcementAgent):
 
         Q_targets = rewards + self.discount * next_values * (1 - dones)
 
-        #Q_diff = Q_targets - pred
-
         loss = F.smooth_l1_loss(pred, Q_targets).to(self.device)
         self.episodeLosses.append(loss.item())
         

@@ -34,7 +34,7 @@ class TrainingParameters:
     save_every_n: int = None  # How frequently should copies of the model be saved during training?
 
     buffer_size: int = 10000 # PyTorch buffer size to use during training
-    batch_size: int = 32  # PyTorch batch size to use during training
+    batch_size: int = 64  # PyTorch batch size to use during training
     update_every: int = 1  # After how many interacts should we update the model?
     update_every_eps = 1  # Deprecated
     update_steps: int = 1  # Used by LDQN
