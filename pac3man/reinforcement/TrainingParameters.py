@@ -2,7 +2,7 @@ import inspect
 
 from constants import env_names
 from constants import agent_names
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 # Doesn't do anything yet
 parameters_used_by_all_agents = ["env_name", "agent_name", "num_episodes", "num_interacts",
@@ -33,18 +33,20 @@ class TrainingParameters:
     test_group_label: str = None  # A label used to identify a batch of experiments
     save_every_n: int = None  # How frequently should copies of the model be saved during training?
 
-    buffer_size: int = 1000 # PyTorch buffer size to use during training
-    batch_size: int = 32  # PyTorch batch size to use during training
+    buffer_size: int = 10000 # PyTorch buffer size to use during training
+    batch_size: int = 64  # PyTorch batch size to use during training
     update_every: int = 1  # After how many interacts should we update the model?
     update_every_eps = 1  # Deprecated
     update_steps: int = 1  # Used by LDQN
 
-    epsilon_start: float = 1.0  # Hyperparameter used in epsilon-greedy algorithms (and others)
-    epsilon: float = 0.1
+    epsilon_start: float = 0.9  # Hyperparameter used in epsilon-greedy algorithms (and others)
+    epsilon: float = 0.05
     
-    slack: float = 1e-3 # Hyperparameter used by lexicographic algorithms
+    slack: list = field(default_factory= lambda: [1.0, 0.1]) # Hyperparameter used by lexicographic algorithms
+    slack_start: list = field(default_factory= lambda: [0.1, 0.5]) # Hyperparameter used by lexicographic algorithms with dynamic slack
+    additive_slack: bool = True # Hyperparameter used by lexicographic algorithms 
 
-    learning_rate: float = 1e-3
+    learning_rate: float = 1e-3 # Hyperparameter used by the optimiser
     tau = 0.005 # update rate for target network
 
     trained = False # load a trained model
@@ -71,7 +73,10 @@ class TrainingParameters:
         self.update_every = int(self.update_every)
         self.update_steps = int(self.update_steps)
         self.epsilon = float(self.epsilon)
-        self.slack = float(self.slack)
+        self.epsilon_start = float(self.epsilon_start)
+        for i in range(len(self.slack)):
+            self.slack[i] = float(self.slack[i])
+            self.slack_start[i] = float(self.slack_start[i])
         self.learning_rate = float(self.learning_rate)
         self.lambda_lr_2 = float(self.lambda_lr_2)
         self.alpha = float(self.alpha)

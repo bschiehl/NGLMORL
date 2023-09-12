@@ -130,22 +130,28 @@ class ReinforcementAgent(ValueEstimationAgent):
 
             NOTE: Do *not* override or call this function
         """
+        if type(action) != str:
+            query_action = action[0]
+            update_action = action[1]
+        else:
+            query_action = action
+            update_action = action
         self.episodeRewards += deltaReward
         if self.episodesSoFar < self.numTraining:
             if lex and filter is not None:
-                violCount = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'VIOL-COUNT')))
+                violCount = filter.process_message(filter.send_request(filter.build_query(state.data, [query_action], 'VIOL-COUNT')))
                 reward = [-violCount, deltaReward]
                 self.episodeViolPenalty -= violCount
-                self.update(state, action, nextState, reward)
+                self.update(state, update_action, nextState, reward)
             else:
-                self.update(state,action,nextState,deltaReward)
+                self.update(state,update_action,nextState,deltaReward)
                 if learn1 and filter is not None:
-                    result = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'EVALUATION')))
-                    self.update2(state, action, nextState, result)
+                    result = filter.process_message(filter.send_request(filter.build_query(state.data, [query_action], 'EVALUATION')))
+                    self.update2(state, update_action, nextState, result)
                 if learn2 and filter is not None:
-                    result1, result2 = filter.process_message(filter.send_request(filter.build_query(state.data, [action], 'DUAL-EVALUATION')))
-                    self.update2(state, action, nextState, result1)
-                    self.update3(state, action, nextState, result2)
+                    result1, result2 = filter.process_message(filter.send_request(filter.build_query(state.data, [query_action], 'DUAL-EVALUATION')))
+                    self.update2(state, update_action, nextState, result1)
+                    self.update3(state, update_action, nextState, result2)
         
 
 

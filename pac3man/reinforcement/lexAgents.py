@@ -25,6 +25,8 @@ class LDQNLearningAgent(ReinforcementAgent):
         self.no_cuda = train_params.no_cuda
         self.update_every = train_params.update_every
         self.slack = train_params.slack
+        self.slack_start = train_params.slack_start
+        self.additive_slack = train_params.additive_slack
         self.reward_size = train_params.reward_size
         self.model = None
         self.target_model = None
@@ -45,12 +47,15 @@ class LDQNLearningAgent(ReinforcementAgent):
         permissible_actions = self.getLegalActions(state, filter, train, supervise)
 
         curr_e = self.epsilon + (self.epsilon_start - self.epsilon) * np.exp(-self.t / self.epsilon_decay) if self.episodesSoFar < self.numTraining else 0
+        if self.t % 1000 == 0:
+            print("Epsilon: {}".format(curr_e))
         
         if np.random.choice([True, False], p=[curr_e, 1 - curr_e]):
             random_value = np.random.randint(1, 1 + self.action_size) 
             move = str(util.Action(random_value))
             self.lastAction = move
             if move not in permissible_actions:
+                self.lastAction = [Directions.STOP, move]
                 move = Directions.STOP
             return move
 
@@ -67,6 +72,7 @@ class LDQNLearningAgent(ReinforcementAgent):
         move = str(util.Action(move))
         self.lastAction = move
         if move not in permissible_actions:
+            self.lastAction = [Directions.STOP, move]
             move = Directions.STOP
         return move
     
@@ -76,8 +82,16 @@ class LDQNLearningAgent(ReinforcementAgent):
         for i in range(self.reward_size):
             Qi = Q[i, :]
             m = max([Qi[a] for a in optimal_actions])
-            r = self.slack
-            optimal_actions = [a for a in optimal_actions if Qi[a] >= m - r * abs(m)]
+            r = self.slack[i]
+            if self.additive_slack:
+                if self.episodesSoFar < self.numTraining:
+                    slack = self.slack_start[i] + (r - self.slack_start[i]) * self.episodesSoFar / self.numTraining
+                else:
+                    slack = r
+                optimal_actions = [a for a in optimal_actions if Qi[a] >= m - slack]
+            else:
+                optimal_actions = [a for a in optimal_actions if Qi[a] >= m - r * abs(m)]
+            
         
         return optimal_actions # from 0
         
@@ -92,19 +106,19 @@ class LDQNLearningAgent(ReinforcementAgent):
         nextState = util.getStateMatrices(nextState)
         action = int(util.Action(action)) -1
 
-        # if reward[-1] > 300:
-        #     reward[-1] = 100.
-        # elif reward[-1] > 20:
-        #     reward[-1] = 50.
-        # elif reward[-1] > 0:
-        #     reward[-1] = 10.
-        # elif reward[-1] < -10:
-        #     reward[-1] = -500.
-        # elif reward[-1] < 0:
-        #     reward[-1] = -1.
+        if reward[-1] > 300:
+            reward[-1] = 100.
+        elif reward[-1] > 20:
+            reward[-1] = 50.
+        elif reward[-1] > 0:
+            reward[-1] = 10.
+        elif reward[-1] < -10:
+            reward[-1] = -500.
+        elif reward[-1] < 0:
+            reward[-1] = -1.
         
-        # if reward[0] < 0:
-        #     reward[0] = -100.
+        if reward[0] < 0:
+            reward[0] = -500.
     
         self.memory.add(state, action, nextState, reward, int(done))
 
@@ -147,7 +161,7 @@ class LDQNLearningAgent(ReinforcementAgent):
         torch.save(self.model.state_dict(), '{}policy-model.pt'.format(path))
         torch.save(self.target_model.state_dict(), '{}target-model.pt'.format(path))
 
-    def load_model(self, path='models/LDQN_3000_s001/'):
+    def load_model(self, path='models/LDQN_3000_s05add/'):
         self.model.load_state_dict(torch.load('{}policy-model.pt'.format(path)))
         self.target_model.load_state_dict(torch.load('{}target-model.pt'.format(path)))
 
@@ -233,18 +247,20 @@ class LTQLearningAgent(ReinforcementAgent):
 
         if np.random.choice([True, False], p=[self.epsilon, 1 - self.epsilon]):
             return np.random.choice(permissible_actions)
-
+        i = 0
         if not self.double:
             for Qi in self.Q:
                 m = max([Qi[state][a] for a in permissible_actions])
-                r = self.slack
+                r = self.slack[i]
                 permissible_actions = [a for a in permissible_actions if Qi[state][a] >= m - r * abs(m)]
+                i += 1
         else:
             for Qai, Qbi in zip(self.Qa, self.Qb):
                 m = max([0.5 * (Qai[state][a] + Qbi[state][a]) for a in permissible_actions])
-                r = self.slack
+                r = self.slack[i]
                 permissible_actions = [a for a in permissible_actions if
                                        0.5 * (Qai[state][a] + Qbi[state][a] >= m - r * abs(m))]
+                i += 1
 
         return np.random.choice(permissible_actions)
     
@@ -255,10 +271,9 @@ class LTQLearningAgent(ReinforcementAgent):
         self.init_state(state)
         self.init_state(next_state)
         permissible_actions = self.actions
-
         for i, Qi in enumerate(self.Q):
             m = max([Qi[next_state][a] for a in permissible_actions])
-            r = self.slack
+            r = self.slack[i]
             permissible_actions = [a for a in permissible_actions if Qi[next_state][a] >= m - r * abs(m)]
 
             Qi[state][action] = (1 - self.alpha) * Qi[state][action] + self.alpha * (reward[i] + self.discount * m)
@@ -268,11 +283,12 @@ class LTQLearningAgent(ReinforcementAgent):
         state = str(state)
         next_state = str(next_state)
         permissible_actions = self.actions
-
+        i = 0
         for Qi in self.Q:
             m = max([Qi[next_state][a] for a in permissible_actions])
-            r = self.slack
+            r = self.slack[i]
             permissible_actions = [a for a in permissible_actions if Qi[next_state][a] >= m - r * abs(m)]
+            i += 1
 
         ps = []
 
@@ -295,10 +311,10 @@ class LTQLearningAgent(ReinforcementAgent):
         state = str(state)
         next_state = str(next_state)
         permissible_actions = self.actions
-        r = self.slack
+        
 
         for i, (Qai, Qbi) in enumerate(zip(self.Qa, self.Qb)):
-
+            r = self.slack[i]
             if np.random.choice([True, False]):
 
                 m = max([Qbi[next_state][a] for a in permissible_actions])
