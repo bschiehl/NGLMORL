@@ -313,14 +313,19 @@ class ContinuousPolicyCNN2(nn.Module):
 #         return x
 
 class PacmanCNN(nn.Module):
-    def __init__(self, width, height, in_channels=6, num_actions=4, reward_size=1, hidden=256):
+    def __init__(self, width, height, in_channels=6, num_actions=4, reward_size=1, hidden=256, largeEnv=False):
         super(PacmanCNN, self).__init__()
         self.num_actions = num_actions
         self.reward_size = reward_size
 
         self.conv1 = nn.Conv2d(in_channels, 32, kernel_size=3, stride=1)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=2, stride=1)
-        self.lin1 = nn.Linear(64 * (width - 3) * (height - 3), hidden)
+        if largeEnv:
+            hidden = hidden * 2
+            self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1)
+            self.lin1 = nn.Linear(64 * (width - 4) * (height - 4), hidden)
+        else:
+            self.conv2 = nn.Conv2d(32, 64, kernel_size=2, stride=1)
+            self.lin1 = nn.Linear(64 * (width - 3) * (height - 3), hidden)
         self.lin2 = nn.Linear(hidden, num_actions * reward_size)
 
     def forward(self, x):
@@ -330,6 +335,49 @@ class PacmanCNN(nn.Module):
         x = self.lin2(x)
         if self.reward_size > 1:
             x = x.view((x.size(0),) + (self.reward_size, self.num_actions))
+        return x
+    
+class PacmanActor(nn.Module):
+    def __init__(self, width, height, in_channels=6, num_actions=4, hidden=256, largeEnv=False):
+        super(PacmanCNN, self).__init__()
+
+        self.conv1 = nn.Conv2d(in_channels, 32, kernel_size=3, stride=1)
+        if largeEnv:
+            hidden = hidden * 2
+            self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1)
+            self.lin1 = nn.Linear(64 * (width - 4) * (height - 4), hidden)
+        else:
+            self.conv2 = nn.Conv2d(32, 64, kernel_size=2, stride=1)
+            self.lin1 = nn.Linear(64 * (width - 3) * (height - 3), hidden)
+        self.lin2 = nn.Linear(hidden, num_actions)
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.lin1(x.view(x.size(0), -1)))
+        x = self.lin2(x)
+        x = F.softmax(x, dim=-1)
+        return x
+    
+class PacmanCritic(nn.Module):
+    def __init__(self, width, height, in_channels=6, hidden=256, largeEnv=False):
+        super(PacmanCNN, self).__init__()
+
+        self.conv1 = nn.Conv2d(in_channels, 32, kernel_size=3, stride=1)
+        if largeEnv:
+            hidden = hidden * 2
+            self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1)
+            self.lin1 = nn.Linear(64 * (width - 4) * (height - 4), hidden)
+        else:
+            self.conv2 = nn.Conv2d(32, 64, kernel_size=2, stride=1)
+            self.lin1 = nn.Linear(64 * (width - 3) * (height - 3), hidden)
+        self.lin2 = nn.Linear(hidden, 1)
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.lin1(x.view(x.size(0), -1)))
+        x = self.lin2(x)
         return x
 
 ##################################################

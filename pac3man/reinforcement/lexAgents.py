@@ -171,8 +171,8 @@ class LDQNLearningAgent(ReinforcementAgent):
 class PacmanLDQNAgent(LDQNLearningAgent):
     def __init__(self, train_params, action_size=4, discount=0.99, **args):
        LDQNLearningAgent.__init__(self, train_params, action_size, discount, **args)
-       self.model = PacmanCNN(train_params.width, train_params.height, num_actions= action_size, reward_size=train_params.reward_size).to(self.device)
-       self.target_model = PacmanCNN(train_params.width, train_params.height, num_actions= action_size, reward_size=train_params.reward_size).to(self.device)
+       self.model = PacmanCNN(train_params.width, train_params.height, num_actions= action_size, reward_size=train_params.reward_size, largeEnv=train_params.largeEnv).to(self.device)
+       self.target_model = PacmanCNN(train_params.width, train_params.height, num_actions= action_size, reward_size=train_params.reward_size, largeEnv=train_params.largeEnv).to(self.device)
        self.target_model.load_state_dict(self.model.state_dict())
        self.optimizer = optim.AdamW(self.model.parameters(), lr=train_params.learning_rate, amsgrad=True)
        if train_params.trained:

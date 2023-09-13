@@ -50,6 +50,7 @@ class TrainingParameters:
     tau = 0.005 # update rate for target network
 
     trained = False # load a trained model
+    largeEnv = False
 
     # AproPo
     lambda_lr_2: float = 0.05
