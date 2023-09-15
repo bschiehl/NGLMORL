@@ -49,8 +49,8 @@ class TrainingParameters:
     learning_rate: float = 1e-3 # Hyperparameter used by the optimiser
     tau = 0.005 # update rate for target network
 
-    trained = False # load a trained model
-    largeEnv = False
+    trained: bool = False # load a trained model
+    largeEnv: bool = False
 
     # AproPo
     lambda_lr_2: float = 0.05

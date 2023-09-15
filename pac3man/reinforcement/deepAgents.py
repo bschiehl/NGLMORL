@@ -114,17 +114,12 @@ class DQNLearningAgent(ReinforcementAgent):
 
         self.model.eval()
 
-#change list
-# 1. NN architecture
-# 2. forbidden actions --> stop
-# 3. update after every state transition
-# 4. change reward values
-# 7. remove stop from available actions (update changed)
+
 class PacmanDQNAgent(DQNLearningAgent):
     def __init__(self, train_params, action_size=4, discount=0.99, **args):
         super().__init__(train_params, action_size, discount, **args)
-        self.model = PacmanCNN(train_params.width, train_params.height).to(self.device)
-        self.target_model = PacmanCNN(train_params.width, train_params.height).to(self.device)
+        self.model = PacmanCNN(train_params.width, train_params.height, largeEnv=train_params.largeEnv).to(self.device)
+        self.target_model = PacmanCNN(train_params.width, train_params.height, largeEnv=train_params.largeEnv).to(self.device)
         self.target_model.load_state_dict(self.model.state_dict())
         self.optimizer = optim.AdamW(self.model.parameters(), lr=train_params.learning_rate, amsgrad=True)
 
