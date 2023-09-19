@@ -12,19 +12,23 @@ import java.util.ArrayList;
 
 public class NormBase {
 	protected ArrayList<ConstitutiveNorm> actionConstitutive;
+	protected ArrayList<ConstitutiveNorm> nonconcurRule;
 	protected ArrayList<ConstitutiveNorm> stateConstitutive;
 	protected ArrayList<RegulativeNorm> regulative;
 	protected ArrayList<ExceptionNorm> exception;
 	protected ArrayList<PriorityNorm> priority;
+	protected ArrayList<DefaultFact> defaults;
 	protected String name;
 
 	public NormBase(String n) {
 		name = n;
 		actionConstitutive = new ArrayList<ConstitutiveNorm>();
 		stateConstitutive = new ArrayList<ConstitutiveNorm>();
+		nonconcurRule = new ArrayList<ConstitutiveNorm>();
 		regulative = new ArrayList<RegulativeNorm>();
 		exception = new ArrayList<ExceptionNorm>();
 		priority = new ArrayList<PriorityNorm>();
+		defaults = new ArrayList<DefaultFact>();
 	}
 	
 	
@@ -70,6 +74,10 @@ public class NormBase {
 		actionConstitutive.add(con);
 	}
 	
+	public void addNCRule(ConstitutiveNorm con) {
+		nonconcurRule.add(con);
+	}
+	
 	
 	public void addRegulativeNorm(RegulativeNorm reg) {
 		regulative.add(reg);
@@ -83,6 +91,10 @@ public class NormBase {
 		priority.add(pr);
 	}
 	
+	public void addDefaultFact(DefaultFact def) {
+		defaults.add(def);
+	}
+	
 	
 	public ArrayList<ConstitutiveNorm> getStateConstitutiveNorms() {
 		return stateConstitutive;
@@ -91,6 +103,10 @@ public class NormBase {
 	
 	public ArrayList<ConstitutiveNorm> getActionConstitutiveNorms() {
 		return actionConstitutive;
+	}
+	
+	public ArrayList<ConstitutiveNorm> getNCRules() {
+		return nonconcurRule;
 	}
 	
 	
@@ -103,6 +119,10 @@ public class NormBase {
 	}
 	public ArrayList<PriorityNorm> getPriorityNorms() {
 		return priority;
+	}
+	
+	public ArrayList<DefaultFact> getDefaultFacts() {
+		return defaults;
 	}
 	
 	
@@ -119,6 +139,7 @@ public class NormBase {
 	
 	
 	public void generateNonConcurrence(ArrayList<String> acts) {
+		nonconcurRule.clear();
         ArrayList<Term> actions = generateActionTerms(acts);
 		for (Term action : actions) {
 			ArrayList<Term> context = new ArrayList<Term>();
@@ -130,7 +151,7 @@ public class NormBase {
 					Term reg = new Term(act.getLabel(), true, false, true);
 					try {
 						ConstitutiveNorm noncon = new ConstitutiveNorm("non-concurrence("+action.getLabel()+","+act.getLabel()+")", context, lower, reg);
-						addActionConstitutiveNorm(noncon);
+						addNCRule(noncon);
 					} catch (Exception e) {
 						e.printStackTrace();
 					}

@@ -62,6 +62,7 @@ public class NormativeModuleServer {
             	running = fillRequest(msg, os);
             }
             System.out.println("Terminating Normative Module Server...");
+            //filter.getCSV().close();
             br.close();
             os.close();
             is.close();

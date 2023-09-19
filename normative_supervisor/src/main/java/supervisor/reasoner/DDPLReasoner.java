@@ -13,6 +13,7 @@ import spindle.core.dom.Mode;
 import spindle.core.dom.Rule;
 import spindle.core.dom.RuleException;
 import spindle.core.dom.RuleType;
+import spindle.core.dom.Superiority;
 import spindle.core.dom.Theory;
 import spindle.tools.explanation.InferenceLogItem;
 import spindle.tools.explanation.InferenceLogger;
@@ -23,7 +24,7 @@ import util.ObjectNotFoundException;
 /**
  * First reasoner class for defeasible deontic logic. Can only be used with norm bases with a 
  * full set of strategy rules. Compliant action set computable within linear time, and 
- * comation of best non-compliant action can be done in polynomial time.
+ * computation of best non-compliant action can be done in polynomial time.
  * 
  * The following methods need minor work before they can be used more generally:
  * - findCompliantActions(): make contains checks before declaring concl_pos and concl_neg
@@ -140,15 +141,6 @@ public class DDPLReasoner extends Reasoner{
 		return !concl_neg.containsKey(ConclusionType.DEFEASIBLY_PROVABLE);
     }
 
-	public int getViolCount(String action) {
-		Map<ArrayList<String>, Integer> eval = evaluateAction(action, "defeated");
-		int violCount = 0;
-		for (Integer val : eval.values()) {
-			violCount = -val;
-		}
-		return violCount;
-	}
-
 
 	@Override
 	public ArrayList<String> findNCActions() {
@@ -172,7 +164,7 @@ public class DDPLReasoner extends Reasoner{
 	
 	
 	
-	protected Map<ArrayList<String>, Integer> evaluateAction(String action, String metric){
+	public Map<ArrayList<String>, Integer> evaluateAction(String action, String metric){
 		Map<ArrayList<String>, Integer> violated = new HashMap<ArrayList<String>, Integer> ();
 		try {
 			Literal act = util.getLit(translator.getActionLits(), action);
@@ -203,12 +195,12 @@ public class DDPLReasoner extends Reasoner{
 	}
 	
 	public Map<ArrayList<String>, Integer> metric(InferenceLogger il, String name) {
-		
 		Map<ArrayList<String>, Integer> violated = new HashMap<ArrayList<String>, Integer> ();
 		ArrayList<String> v = new ArrayList<String>();
 		Map<String,InferenceLogItem> templog = il.getInferenceLogItems().entrySet().stream()
 				.filter(p -> util.containsSome(p.getKey(),  labels))
 				.collect(Collectors.toMap(map -> map.getKey(), map -> map.getValue()));
+		//System.out.println(templog.toString());
 		int applicable = 0;
 		int defeated = 0;
 		for(String rule : templog.keySet()) {
@@ -242,13 +234,32 @@ public class DDPLReasoner extends Reasoner{
 		violated.put(v, score);
 		return violated;
 	}
+	
+	
+	public int violationCount(String action) {
+		int score = 0;
+		for(int i : evaluateAction(action, "defeated").values()) {
+			score -= i;
+		}
+		return score;
+	}
+	
 
 	public void printTheory() {
 		System.out.println(copy.toString());
 	}
-
-
 	
+	public void printConclusions() {
+		for(Literal l : conclusions.keySet()) {
+			System.out.println(l.toString());
+			System.out.println(conclusions.get(l).toString());
+		}
+	}
+
+
+	public int getTheorySize() {
+		return copy.getDefeasibleRulesCount() + copy.getDefeatersCount() + copy.getFactsCount() + copy.getStrictRulesCount();
+	}
 	
 
 }

@@ -8,7 +8,7 @@ import util.ProjectUtils;
  * state. Two arguments are needed: the name of the game being modeled, 
  * and the name of the norm base.
  * 
- * To run, we need 4 arguments: the name of the game, the name of the 
+ * To synthesize, we need 4 arguments: the name of the game, the name of the 
  * norm base, the name of the reasoner, and the port to connect to.
  * 
  * Unless a bug is found, please do not alter this class.

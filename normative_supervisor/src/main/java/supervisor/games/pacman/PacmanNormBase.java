@@ -12,6 +12,7 @@ import supervisor.normsys.NormBase;
 import supervisor.normsys.PriorityNorm;
 import supervisor.normsys.RegulativeNorm;
 import supervisor.normsys.Term;
+import supervisor.normsys.DefaultFact;
 
 /**
  * Generation methods for the norm bases for the Pac-Man game.
@@ -308,7 +309,7 @@ public class PacmanNormBase extends NormBase{
 				public boolean test(PacmanGameObject base) {
 					boolean bool = false;
 					for(Float[] coord : zone) {
-						PacmanGameObject obj = new PacmanGameObject("",  coord[0], coord[1]);
+						PacmanGameObject obj = new PacmanGameObject("danger",  coord[0], coord[1]);
 						boolean b = term.evaluateBinary(base, obj);
 						bool = bool || b;
 					}
@@ -343,6 +344,8 @@ public class PacmanNormBase extends NormBase{
 			e.printStackTrace();
 		}	
 	}
+	
+
 	
 	
 	public void giveUp(String satelite, String condition) {
@@ -456,6 +459,9 @@ public class PacmanNormBase extends NormBase{
 			o_bene.setMode(Modality.OBLIGATION);
 			RegulativeNorm benevolence = new RegulativeNorm("benevolence", context, o_bene);
 			addRegulativeNorm(benevolence);
+			DefaultFact benevolent = new DefaultFact("default(benevolent)", bene);
+			addDefaultFact(benevolent);
+			
 			
 			ArrayList<Term> countsAs = new ArrayList<Term>();
 			countsAs.add(eat);
@@ -510,7 +516,7 @@ public class PacmanNormBase extends NormBase{
 			eat.setSateliteObject(satelite);
 			Term f_eat = eat.copy();
 			f_eat.setMode(Modality.PERMISSION);
-			ExceptionNorm eatstuff  = new ExceptionNorm("eat(pacman,"+satelite+")", context, f_eat);
+			ExceptionNorm eatstuff  = new ExceptionNorm("P(eat(pacman,"+satelite+"))", context, f_eat);
 			addExceptionNorm(eatstuff);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -536,6 +542,21 @@ public class PacmanNormBase extends NormBase{
 			e.printStackTrace();
 		}
 		
+	}
+	
+	public void preferenceCTD() {
+		//TO BE USED WITH BENEVOLENT
+		ArrayList<Term> context = new ArrayList<Term>();
+		Term eat = new Term("eat(pacman,ghost)", false, false, true);
+		eat.setBaseObject("pacman");
+		eat.setSateliteObject("ghost");
+		context.add(eat);
+		Term eat2 = new Term("eat(pacman,oGhost)", false, false, true);
+		eat2.setBaseObject("pacman");
+		eat2.setSateliteObject("oGhost");
+		eat2.setMode(Modality.OBLIGATION);
+		RegulativeNorm pref = new RegulativeNorm("CTD", context, eat2);
+		addRegulativeNorm(pref);
 	}
 	
 	

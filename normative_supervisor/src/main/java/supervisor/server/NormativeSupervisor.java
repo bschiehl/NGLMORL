@@ -1,6 +1,9 @@
 package supervisor.server;
 
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -39,6 +42,7 @@ public class NormativeSupervisor {
 	protected ProjectUtils util = new ProjectUtils();
 	protected String name;
 	protected JSONObject state;
+	protected ArrayList<String> stats;
 	
 	
 
@@ -61,9 +65,23 @@ public class NormativeSupervisor {
     	id = q.getInt("id");
     	game = createGame();
     	game.init();
-	}
-	
+    	stats = new ArrayList<String>();
+    	/*String ts = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+    	File file = new File("//home//emery//stats-"+ts+".csv");
+    	try {
+    		FileWriter outputfile = new FileWriter(file);
+            writer = new CSVWriter(outputfile);
+            //String[] title = {"update-labels (ms)", "update-parse game(ms)", "reasoning (ms)", "theory size"};
+            String[] title = {"update-labels (ms)", "update-parse game(ms)", "reasoning (ms)", "check ideal (ms)", "check sub-ideal (ms)", "theory size"};
+            writer.writeNext(title);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}*/
+	}            
+    	
+
 	public void update(String json) {
+		stats.clear();
 		current = json;
 		JSONObject q = new JSONObject(json);
 		type = q.getString("request");
@@ -74,12 +92,16 @@ public class NormativeSupervisor {
 	    		possible.add(p.getString(i));
 	    	}
 		}
-		else if(type.equals("EVALUATION")) {
+		else if(type.equals("EVALUATION") || type.equals("METRIC")) {
 			eval = q.getString("action");
-			possible.add(q.getString("action"));
-		} else if (type.equals("VIOL-COUNT")) {
+			possible.add(eval);
+		}
+		else if(type.equals("DUAL-EVALUATION")) {
 			eval = q.getString("action");
-			possible.add(q.getString("action"));
+			JSONArray p = q.getJSONArray("possible");
+			for(int i = 0; i < p.length(); i++) {
+	    		possible.add(p.getString(i));
+	    	}
 		}
 		int d = q.getInt("id");
 		if(d != id) {
@@ -89,10 +111,18 @@ public class NormativeSupervisor {
 		}
 		labels.clear();
 		JSONArray l = q.getJSONArray("labels");
+		long start1 = System.currentTimeMillis();
 		for(int i = 0; i < l.length(); i++) {
     		labels.add(l.getString(i));
     	}
+		long end1 = System.currentTimeMillis();
+		String s1 = Long.toString(end1 - start1);
+		stats.add(s1);
+		long start2 = System.currentTimeMillis();
 		game.update(parseGame(), possible);
+		long end2 = System.currentTimeMillis();
+		String s2 = Long.toString(end2 - start2);
+		stats.add(s2);
 	}
 	
 	
@@ -100,7 +130,13 @@ public class NormativeSupervisor {
 		JSONObject response = new JSONObject();
 		
 		if(type.equals("FILTER")) {
+			long start2 = System.currentTimeMillis();
             game.reason();
+			long end2 = System.currentTimeMillis();
+			String s2 = Long.toString(end2 - start2);
+			stats.add(s2);
+			String s3 = Integer.toString(game.getTheorySize());
+			stats.add(s3);
             ArrayList<String> actions = game.findCompliantActions();
 		        boolean compl = true;
 		        if (actions.isEmpty()) {
@@ -113,23 +149,54 @@ public class NormativeSupervisor {
 		        actions.clear();
 		}
 		else if(type.equals("EVALUATION")) {
+			long start2 = System.currentTimeMillis();
 			game.reason();
+			long end2 = System.currentTimeMillis();
+			String s2 = Long.toString(end2 - start2);
+			stats.add(s2);
+			String s3 = Integer.toString(game.getTheorySize());
+			stats.add(s3);
 			boolean compl = game.checkAction(eval);
 			response = createEvalResponse(compl);
-		} else if (type.equals("VIOL-COUNT")) {
-			game.reason();
-			int violCount = game.getViolCount(eval);
-			response = createViolCountResponse(violCount);
 		}
+		else if(type.equals("METRIC")) {
+			long start2 = System.currentTimeMillis();
+			game.reason();
+			long end2 = System.currentTimeMillis();
+			String s2 = Long.toString(end2 - start2);
+			stats.add(s2);
+			String s3 = Integer.toString(game.getTheorySize());
+			stats.add(s3);
+			boolean compl = game.checkAction(eval);
+			int score = game.scoreAction(eval);
+			response = createMetricResponse(compl, score);
+		}
+		else if(type.equals("DUAL-EVALUATION")) {
+			long start2 = System.currentTimeMillis();
+			game.reason();
+			long end2 = System.currentTimeMillis();
+			String s2 = Long.toString(end2 - start2);
+			stats.add(s2);
+			long start3 = System.currentTimeMillis();
+			boolean compl = game.checkAction(eval);
+			long end3 = System.currentTimeMillis();
+			String s3 = Long.toString(end3 - start3);
+			stats.add(s3);
+			long start4 = System.currentTimeMillis();
+			boolean sub = game.checkActionSub(eval);
+			long end4 = System.currentTimeMillis();
+			String s4 = Long.toString(end4 - start4);
+			stats.add(s4);
+			String s5 = Integer.toString(game.getTheorySize());
+			stats.add(s5);
+			response = createDualEvalResponse(compl, sub);
+		}
+		//String[] st = new String[stats.size()];
+		//st = stats.toArray(st);
+		//writer.writeNext(st);
 		return response;
 	}
-
-	public JSONObject createViolCountResponse(int violCount) {
-		JSONObject response = new JSONObject();
-		response.put("response", "VIOL-COUNT");
-		response.put("violCount", violCount);
-		return response;
-	}
+	
 	
 	public JSONObject createFilterResponse(List<String> actions, boolean compl){
 		JSONObject response = new JSONObject();
@@ -145,6 +212,22 @@ public class NormativeSupervisor {
 		JSONObject response = new JSONObject();
 		response.put("response", "EVALUATION");
 		response.put("compliant", compl);
+    	return response;
+    }
+	
+	public JSONObject createMetricResponse(boolean compl, int v){
+		JSONObject response = new JSONObject();
+		response.put("response", "METRIC");
+		response.put("compliant", compl);
+		response.put("violations", v);
+    	return response;
+    }
+	
+	public JSONObject createDualEvalResponse(boolean compl, boolean sub){
+		JSONObject response = new JSONObject();
+		response.put("response", "DUAL-EVALUATION");
+		response.put("compliant", compl);
+		response.put("sub-ideal", sub);
     	return response;
     }
     
@@ -188,5 +271,6 @@ public class NormativeSupervisor {
 	public Game getGame() {
 		return game;
 	}
+
 
 }

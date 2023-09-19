@@ -162,8 +162,11 @@ public class ProjectUtils {
 		NormBase nb;
 		if(game.equals("merchant")) {
 			nb = new MerchantNormBase(type);
-			if (type.equals("pacifist")) {
+			if (type.equals("pacifist-full")) {
 				((MerchantNormBase) nb).generatePacifist();
+			}
+			if (type.equals("pacifist")) {
+				((MerchantNormBase) nb).directPacifist();
 			}
 			else if (type.equals("pacifist-weak")) {
 				((MerchantNormBase) nb).weakPacifist();
@@ -245,6 +248,7 @@ public class ProjectUtils {
         	nb.danger(danger, "oGhost");
         }
         else if(type.equals("safe-small")) {
+        	danger.clear();
         	danger.add(new Float[] {(float) 5.0, (float) 3.0});
         	nb.vegan("bGhost");
         	nb.danger(danger, "bGhost");
@@ -314,6 +318,10 @@ public class ProjectUtils {
         	nb.benevolent();
         	nb.passive("bGhost");
         	nb.passive("oGhost");
+        }
+        else if(type.equals("unfair-benevolent")) {
+        	nb.benevolent();
+        	nb.preferenceCTD();
         }
         } catch (Exception e) {
 			e.printStackTrace();

@@ -38,10 +38,7 @@ public class PacmanSupervisor extends NormativeSupervisor {
 		    		possible.add(p.getString(i));
 		    	}
 			}
-			else if(type.equals("EVALUATION")) {
-				eval = q.getString("action");
-				possible.add(q.getString("action"));
-			} else if (type.equals("VIOL-COUNT")) {
+			else if(type.equals("EVALUATION") || type.equals("DUAL-EVALUATION") || type.equals("METRIC")) {
 				eval = q.getString("action");
 				possible.add(q.getString("action"));
 			}

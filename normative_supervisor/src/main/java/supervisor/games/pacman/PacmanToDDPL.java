@@ -37,7 +37,7 @@ public class PacmanToDDPL extends DDPLTranslator {
 	ArrayList<ArrayList<Literal>> oGhostLit = new ArrayList<ArrayList<Literal>>();
 	//HashMap<Rule, ArrayList<Rule>> strategy = new HashMap<Rule, ArrayList<Rule>>();	
 	ArrayList<String> dirs = new ArrayList<String>(Arrays.asList("North", "South", "East", "West"));
-	ArrayList<Superiority> hierarchy = new ArrayList<Superiority>();
+	ArrayList<String> acts = new ArrayList<String>(Arrays.asList("North", "South", "East", "West", "Stop"));
 	
 
 	public PacmanToDDPL(NormBase nb) {
@@ -251,6 +251,8 @@ public class PacmanToDDPL extends DDPLTranslator {
 			for(ConstitutiveNorm n : actNorms) {
 				Rule rule1 = new Rule("pos:"+n.getName(), RuleType.DEFEASIBLE);
 				Rule rule2 = new Rule("neg:-"+n.getName(), RuleType.DEFEASIBLE);
+				Rule rule3 = new Rule(n.getName(), RuleType.STRICT);
+				
 				/*if(n.getName().contains("strategy")) {
 					rule1 = new Rule("pos:"+n.getName(), RuleType.STRICT);
 					rule2 = new Rule("neg:-"+n.getName(), RuleType.STRICT);
@@ -271,30 +273,52 @@ public class PacmanToDDPL extends DDPLTranslator {
 					Literal lit = termToLit(term, false);
 					rule1.addBodyLiteral(lit);
 					rule2.addBodyLiteral(lit);
+					rule3.addBodyLiteral(lit);
 				}
 				//positive
-				for(Term term : n.getLowerTerms()) {
-					Literal lit1 = termToLit(term, false);
-					lit1.setMode(obl);
-					rule1.addBodyLiteral(lit1);
+				if(!n.getName().contains("non-concurrence")) {
+					for(Term term : n.getLowerTerms()) {
+						Literal lit1 = termToLit(term, false);
+						lit1.setMode(obl);
+						rule1.addBodyLiteral(lit1);
+					Literal head1 = termToLit(n.getHigherTerm(), false);	
+					rule1.addHeadLiteral(head1);
+					rule1.setMode(obl);
+					rules.add(rule1);
+					strategies.add(rule1);
+					//for(Rule r : norms) {
+					//	if(r.isConflictRule(rule1)) {
+					//		Superiority sup = new Superiority(rule1.getLabel(),r.getLabel());
+					//		hierarchy.add(sup);
+					//	}
+					//}
+					}
 				}
-				Literal head1 = termToLit(n.getHigherTerm(), false);	
-				rule1.addHeadLiteral(head1);
-				rule1.setMode(obl);
-				rules.add(rule1);
-				strategies.add(rule1);
 				//contrapositive
+				if(!n.getName().contains("non-concurrence")) {
 				Literal lit2 = termToLit(n.getHigherTerm(), false).getComplementClone();
 				lit2.setMode(obl);
 				rule2.addBodyLiteral(lit2);
-				for(Term term : n.getLowerTerms()) {
+				for(Term term : n.getLowerTerms()) { //make lower terms single term
 					Literal head2 = termToLit(term, false).getComplementClone();
 					rule2.addHeadLiteral(head2);
 					rule2.setMode(obl);
 					rules.add(rule2);
 					strategies.add(rule2);
 				}
-			}
+				}
+				//strict
+					for(Term term : n.getLowerTerms()) {
+						Literal lit3 = termToLit(term, false);
+						if (acts.contains(lit3.getName())) {
+						lit3.setMode(obl);
+						rule3.addBodyLiteral(lit3);
+					    Literal head3 = termToLit(n.getHigherTerm(), false);	
+					    rule3.addHeadLiteral(head3);
+					    rules.add(rule3);
+					}
+					}
+				}
 		}
 		catch (RuleException e) {
 			e.printStackTrace();

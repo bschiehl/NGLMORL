@@ -1,7 +1,12 @@
 package supervisor.games;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 
 import supervisor.normsys.DDPLTranslator;
 import supervisor.normsys.DDPLTranslator2;
@@ -33,6 +38,7 @@ public class Game {
 	protected Translator translator;
 	
 	
+	
 	public Game(Environment env, NormBase nb, String rt, ArrayList<String> acts) {
 		reasonerType = rt;
 		normBase = nb;
@@ -48,7 +54,13 @@ public class Game {
 		}
 		else if(reasonerType.equals("DDPL2")) {
 			translator = new DDPLTranslator2(normBase);
-			reasoner = new DDPLReasoner2(this, false);
+			boolean perm;
+			if(normBase.getName().contains("weak")) {
+				perm = false;
+			} else {
+				perm = true;
+			}
+			reasoner = new DDPLReasoner2(this, perm);
 			translator.init(environment, actions);
 		}
 		//add new reasoners here
@@ -92,9 +104,14 @@ public class Game {
 	public boolean checkAction(String action) {
 		return reasoner.checkActionCompliance(action);
 	}
-
-	public int getViolCount(String action) {
-		return reasoner.getViolCount(action);
+	
+	public int scoreAction(String action) {
+		return reasoner.violationCount(action);
+	}
+	
+	public boolean checkActionSub(String action) {
+		ArrayList<String> subs = reasoner.findNCActions();
+		return subs.contains(action);
 	}
 	
 	public NormBase getNormBase() {
@@ -115,6 +132,14 @@ public class Game {
 	
 	public void printStateTheory() {
 		reasoner.printTheory();
+	}
+	
+	public void printStateConcl() {
+		reasoner.printConclusions();
+	}
+	
+	public int getTheorySize() {
+		return reasoner.getTheorySize();
 	}
 
 

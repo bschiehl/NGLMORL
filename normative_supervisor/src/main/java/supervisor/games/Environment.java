@@ -44,6 +44,10 @@ public class Environment {
 		return dim;
 	}
 	
+	public void configureLabels(ArrayList<String> lab) {
+		all_labels = lab;
+	}
+	
 	public void setLabels(ArrayList<String> lab) {
 		pos_labels = lab;
 		for(String l : all_labels) {
@@ -60,10 +64,14 @@ public class Environment {
 	public ArrayList<String> getNegLabels(){
 		return neg_labels;
 	}
-
-	public void configureLabels(ArrayList<String> ap) {
+	
+	public ArrayList<String> getLabels(){
+		return all_labels;
 	}
-
+	
 	public void clear() {
+		pos_labels = new ArrayList<String>();
+		neg_labels = new ArrayList<String>();
 	}
+	
 }

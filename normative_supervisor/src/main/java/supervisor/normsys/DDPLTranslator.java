@@ -41,6 +41,7 @@ public class DDPLTranslator extends Translator {
 
 	@Override
 	public void update(Environment env, ArrayList<String> possible, Game game) {
+		clear();
 		labelsToFacts(env);
 		generateActionNorms(possible);
 		generateConstitutiveRules(env);
@@ -156,8 +157,10 @@ public class DDPLTranslator extends Translator {
 
 	public void generateActionConstitutiveRules() {
 		try {
-			ArrayList<ConstitutiveNorm> actNorms = normBase.getActionConstitutiveNorms();
-			for(ConstitutiveNorm n : actNorms) {
+			ArrayList<ConstitutiveNorm> all = new ArrayList<ConstitutiveNorm>();
+			all.addAll(normBase.getActionConstitutiveNorms());
+			all.addAll(normBase.getNCRules());
+			for(ConstitutiveNorm n : all) {
 				Rule rule1 = new Rule("pos:"+n.getName(), RuleType.DEFEASIBLE);
 				Rule rule2 = new Rule("neg:-"+n.getName(), RuleType.DEFEASIBLE);
 				/*if(n.getName().contains("strategy")) {
@@ -314,6 +317,9 @@ public class DDPLTranslator extends Translator {
 		facts.clear();
 		rules.clear();
 		norms.clear();
+		actionRules.clear();
+		strategies.clear();
+		hierarchy.clear();
 	}
 
 }

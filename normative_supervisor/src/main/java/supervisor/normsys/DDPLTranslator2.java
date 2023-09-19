@@ -23,8 +23,10 @@ public class DDPLTranslator2 extends DDPLTranslator {
 	@Override
 	public void generateActionConstitutiveRules() {
 		try {
-			ArrayList<ConstitutiveNorm> actNorms = normBase.getActionConstitutiveNorms();
-			for(ConstitutiveNorm n : actNorms) {
+			ArrayList<ConstitutiveNorm> all = new ArrayList<ConstitutiveNorm>();
+			all.addAll(normBase.getActionConstitutiveNorms());
+			all.addAll(normBase.getNCRules());
+			for(ConstitutiveNorm n : all) {
 				Rule rule = new Rule(n.getName(), RuleType.STRICT);
 				for(Term term : n.getContext()) {
 					Literal lit = termToLit(term, false);

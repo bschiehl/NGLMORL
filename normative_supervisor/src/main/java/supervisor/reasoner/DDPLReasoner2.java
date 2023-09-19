@@ -1,5 +1,8 @@
 package supervisor.reasoner;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,13 +41,12 @@ public class DDPLReasoner2 extends Reasoner {
 	Theory copy = new Theory();
 	DDPLTranslator translator;
 	Set<Literal> literals;
-	boolean permissive;
+	
 
 	public DDPLReasoner2(Game g, boolean perm) {
 		super(g);
 		gameState = new DDPLReasonerCore();
 		translator = (DDPLTranslator) g.getTranslator();
-		permissive = perm;
 	}
 
 	@Override
@@ -103,12 +105,7 @@ public class DDPLReasoner2 extends Reasoner {
 
 	@Override
 	public boolean checkActionCompliance(String action) {
-		return evaluateAction(action, true) == 0;
-	}
-
-	@Override
-	public int getViolCount(String action) {
-		return evaluateAction(action, true);
+		return evaluateAction(action) == 0;
 	}
 
 	@Override
@@ -118,7 +115,7 @@ public class DDPLReasoner2 extends Reasoner {
 		Map<String, Integer> scores = new HashMap<String, Integer>();
 		int min = Integer.MAX_VALUE;
 		for(String act : possible) {
-			int score = evaluateAction(act, permissive);
+			int score = evaluateAction(act);
 			scores.put(act, score);
 			if(score < min) {
 				min = score;
@@ -133,7 +130,7 @@ public class DDPLReasoner2 extends Reasoner {
 		
 	}
 	
-	public int evaluateAction(String action, boolean perm) {
+	public int evaluateAction(String action) {
 		int score = 0;
 		Map<Literal, Map<ConclusionType, Conclusion>> concl = conclusions.get(action);
 		Map<Literal, Map<ConclusionType, Conclusion>> obls = concl.entrySet().stream()
@@ -145,23 +142,42 @@ public class DDPLReasoner2 extends Reasoner {
 				Literal l1 = lit.clone();
 				l1.removeMode();
 				Literal l2 = l1.getComplementClone();
-				if(perm) {
+				if(l1.isNegation()) {
 					if(concl.keySet().contains(l2) && concl.get(l2).containsKey(ConclusionType.DEFEASIBLY_PROVABLE)){
 						score += 1;
 					}
 				}
 				else {
-					if(!concl.containsKey(l1) || !concl.get(l1).containsKey(ConclusionType.DEFEASIBLY_PROVABLE)){
+					if(!concl.keySet().contains(l1) || !concl.get(l1).containsKey(ConclusionType.DEFEASIBLY_PROVABLE)){
 						score += 1;
 					}
-				}
+			    }
 			}		
 		}
 		return score;
 	}
 	
+	
+	public int violationCount(String action) {
+		return evaluateAction(action);
+	}
+	
+	
+	
+	
 	public void printTheory() {
 		System.out.println(copy.toString());
+	}
+	
+	public void printConclusions() {
+		for(String l : conclusions.keySet()) {
+			System.out.println(l);
+			System.out.println(conclusions.get(l));
+		}
+	}
+	
+	public int getTheorySize() {
+		return copy.getDefeasibleRulesCount() + copy.getDefeatersCount() + copy.getFactsCount() + copy.getStrictRulesCount();
 	}
 
 }

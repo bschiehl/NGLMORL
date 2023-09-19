@@ -32,7 +32,7 @@ public abstract class Reasoner {
 	
 	
 	/*
-	 * Method to run whatever reasoning engine is being utilized by the reasoner on
+	 * Method to synthesize whatever reasoning engine is being utilized by the reasoner on
 	 * the GameState theory. All the relevant results should be stored e.g. as in 
 	 * the conclusions Map in the DDPL reasoners.
 	*/
@@ -52,17 +52,17 @@ public abstract class Reasoner {
 	 * compliant, given the conclusions from reason(). Returns true/false.
 	 */
 	public abstract boolean checkActionCompliance(String action);
-
+	
+	
 	/*
-	 * A method that, given an action label, returns the number of norm violations
-	 * incurred from taking this action, given the conclusions from reason().
+	 * A method that, given an action label, scores an action by number of violations.
 	 */
-	public abstract int getViolCount(String action);
+	public abstract int violationCount(String action);
 	
 	
 	/*
 	 * The method that is called if findCompliantActions() returns an empty ArrayList.
-	 * It may or may not require the reasoning engine to be run (at least) once more.
+	 * It may or may not require the reasoning engine to be synthesize (at least) once more.
 	 * This method returns the labels of actions that are determined to be minimally 
 	 * non-compliant (e.g., they break the least number of rules). The way this method 
 	 * has been implemented thus far involves an evaluateAction() method that returns 
@@ -75,6 +75,12 @@ public abstract class Reasoner {
 	 * A method to print the GameState theory.
 	 */
 	public abstract void printTheory();
+
+
+	public abstract void printConclusions();
+	
+	
+	public abstract int getTheorySize();
     	
 
 }
