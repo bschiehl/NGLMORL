@@ -50,6 +50,7 @@ class TrainingParameters:
     tau = 0.005 # update rate for target network
 
     trained: bool = False # load a trained model
+    model_path: str = None # path to a trained model
     largeEnv: bool = False
 
     # AproPo

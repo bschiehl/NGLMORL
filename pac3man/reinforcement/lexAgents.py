@@ -161,7 +161,7 @@ class LDQNLearningAgent(ReinforcementAgent):
         torch.save(self.model.state_dict(), '{}policy-model.pt'.format(path))
         torch.save(self.target_model.state_dict(), '{}target-model.pt'.format(path))
 
-    def load_model(self, path='models/LDQN_3000_s05add/'):
+    def load_model(self, path='models/'):
         self.model.load_state_dict(torch.load('{}policy-model.pt'.format(path)))
         self.target_model.load_state_dict(torch.load('{}target-model.pt'.format(path)))
 
@@ -176,7 +176,7 @@ class PacmanLDQNAgent(LDQNLearningAgent):
        self.target_model.load_state_dict(self.model.state_dict())
        self.optimizer = optim.AdamW(self.model.parameters(), lr=train_params.learning_rate, amsgrad=True)
        if train_params.trained:
-           self.load_model()
+           self.load_model(path=train_params.model_path)
            print("Loaded model")
        if torch.cuda.is_available() and not self.no_cuda:
            self.model.cuda()
