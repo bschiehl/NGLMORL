@@ -607,10 +607,11 @@ def readCommand( argv ):
             train_params = TrainingParameters(args['layout'].width, args['layout'].height, options.numTraining, 2 * options.numTraining, slack=[0.001, 0.001], **lexOpts)
         elif (options.pacman == "PacmanLDQNAgent" or options.pacman == "PacmanDQNAgent") and options.layout == "littleClassic":
             train_params = TrainingParameters(args['layout'].width, args['layout'].height, options.numTraining, 2 * options.numTraining, 
-                                              batch_size=64, slack=[1.0, 0.1], slack_start=[0.1, 0.5], additive_slack=True, **lexOpts)
+                                              batch_size=32, slack=[1.0, 0.1], slack_start=[0.1, 0.5], additive_slack=True, **lexOpts)
         elif (options.pacman == "PacmanLDQNAgent" or options.pacman == "PacmanDQNAgent") and options.layout == "mediumClassic":
             train_params = TrainingParameters(args['layout'].width, args['layout'].height, options.numTraining, 10 * options.numTraining,
-                                              batch_size=128, update_every=4, slack=[1.0, 0.1], slack_start=[0.1, 0.5], additive_slack=True, largeEnv=True, **lexOpts)
+                                              batch_size=32, update_every=4, slack=[1.0, 0.1], slack_start=[0.1, 0.5], additive_slack=True, 
+                                              learning_rate=1e-4, buffer_size=100000, largeEnv=True, **lexOpts)
         else:
             train_params = TrainingParameters(args['layout'].width, args['layout'].height, options.numTraining, 2 * options.numTraining, **lexOpts)
         pacman = pacmanType(train_params, **agentOpts)

@@ -114,6 +114,14 @@ class DQNLearningAgent(ReinforcementAgent):
 
         self.model.eval()
 
+    def save_model(self, path='models/'):
+        torch.save(self.model.state_dict(), '{}policy-model.pt'.format(path))
+        torch.save(self.target_model.state_dict(), '{}target-model.pt'.format(path))
+
+    def load_model(self, path='models/'):
+        self.model.load_state_dict(torch.load('{}policy-model.pt'.format(path)))
+        self.target_model.load_state_dict(torch.load('{}target-model.pt'.format(path)))
+
 
 class PacmanDQNAgent(DQNLearningAgent):
     def __init__(self, train_params, action_size=4, discount=0.99, **args):
@@ -122,6 +130,9 @@ class PacmanDQNAgent(DQNLearningAgent):
         self.target_model = PacmanCNN(train_params.width, train_params.height, largeEnv=train_params.largeEnv).to(self.device)
         self.target_model.load_state_dict(self.model.state_dict())
         self.optimizer = optim.AdamW(self.model.parameters(), lr=train_params.learning_rate, amsgrad=True)
+        if train_params.trained:
+           self.load_model(path=train_params.model_path)
+           print("Loaded model")
 
     def getAction(self, state, filter=None, train=False, supervise=False):
         copy = state.deepCopy()
