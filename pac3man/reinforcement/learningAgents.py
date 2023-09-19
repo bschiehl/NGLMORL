@@ -139,7 +139,8 @@ class ReinforcementAgent(ValueEstimationAgent):
         self.episodeRewards += deltaReward
         if self.episodesSoFar < self.numTraining:
             if lex and filter is not None:
-                violCount = filter.process_message(filter.send_request(filter.build_query(state.data, [query_action], 'VIOL-COUNT')))
+                #violCount = filter.process_message(filter.send_request(filter.build_query(state.data, [query_action], 'VIOL-COUNT')))
+                violCount = filter.process_message(filter.send_request(filter.build_query(state.data, [query_action], 'METRIC')))
                 reward = [-violCount, deltaReward]
                 self.episodeViolPenalty -= violCount
                 self.update(state, update_action, nextState, reward)
