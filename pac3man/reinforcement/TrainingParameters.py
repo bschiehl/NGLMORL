@@ -85,8 +85,10 @@ class TrainingParameters:
         self.beta = float(self.beta)
         self.reward_size = int(self.reward_size)
         self.constraint = float(self.constraint)
-        self.no_cuda = bool(self.no_cuda)
-        self.lextab_on_policy = bool(self.lextab_on_policy)
+        self.no_cuda = self.no_cuda == "True"
+        self.largeEnv = self.largeEnv == "True"
+        self.trained = self.trained == "True"
+        self.lextab_on_policy = self.lextab_on_policy == "True"
         # assert (self.agent_name in agent_names)
         # assert (self.env_name in env_names)
         # assert (self.network in ["CNN", "DNN"])

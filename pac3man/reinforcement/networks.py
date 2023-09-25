@@ -339,7 +339,7 @@ class PacmanCNN(nn.Module):
     
 class PacmanActor(nn.Module):
     def __init__(self, width, height, in_channels=6, num_actions=4, hidden=256, largeEnv=False):
-        super(PacmanCNN, self).__init__()
+        super(PacmanActor, self).__init__()
 
         self.conv1 = nn.Conv2d(in_channels, 32, kernel_size=3, stride=1)
         if largeEnv:
@@ -361,7 +361,7 @@ class PacmanActor(nn.Module):
     
 class PacmanCritic(nn.Module):
     def __init__(self, width, height, in_channels=6, hidden=256, largeEnv=False):
-        super(PacmanCNN, self).__init__()
+        super(PacmanCritic, self).__init__()
 
         self.conv1 = nn.Conv2d(in_channels, 32, kernel_size=3, stride=1)
         if largeEnv:
