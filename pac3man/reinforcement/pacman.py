@@ -724,6 +724,9 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
     else:
         filt = None
 
+    startTime = time.time()
+    recordedTrainingTime = False
+
     for i in range( numGames ):
         if filt is not None:
             filt.setID(i)
@@ -747,10 +750,14 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
             sup = supervise
         game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions, filt, train, sup, learn1,learn2, lex)
         game.run()
-        if not beQuiet: games.append(game)
+        if not beQuiet: 
+            games.append(game)
+            if not recordedTrainingTime:
+                trainingTime = time.time() - startTime
+                recordedTrainingTime = True
+
 
         if record:
-            import time
             import pickle as cPickle
             fname = ('recorded-game-%d' % (i + 1)) +  '-'.join([str(t) for t in time.localtime()[1:6]])
             f = open(fname, 'w')
@@ -779,6 +786,7 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
         print('Scores:       ', ', '.join([str(score) for score in scores]))
         print('Win Rate:      %d/%d (%.2f)' % (wins.count(True), len(wins), winRate))
         print('Record:       ', ', '.join([ ['Loss', 'Win'][int(w)] for w in wins]))
+        print("Training took %.2f seconds" % trainingTime)
 
     return games
 

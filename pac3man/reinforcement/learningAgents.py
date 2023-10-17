@@ -139,10 +139,11 @@ class ReinforcementAgent(ValueEstimationAgent):
         self.episodeRewards += deltaReward
         if self.episodesSoFar < self.numTraining:
             if lex and filter is not None:
-                #violCount = filter.process_message(filter.send_request(filter.build_query(state.data, [query_action], 'VIOL-COUNT')))
                 violCount = filter.process_message(filter.send_request(filter.build_query(state.data, [query_action], 'METRIC')))
+                if violCount > 1:
+                    nextState.data._violations += 1
                 reward = [-violCount, deltaReward]
-                self.episodeViolPenalty -= violCount
+                self.episodeViolPenalty += violCount
                 self.update(state, update_action, nextState, reward)
             else:
                 self.update(state,update_action,nextState,deltaReward)
@@ -273,27 +274,30 @@ class ReinforcementAgent(ValueEstimationAgent):
                        self.episodesSoFar,self.numTraining))
                 print('\tAverage Rewards over all training: %.2f' % (
                         trainAvg))
-                self.writer.add_scalar('Score/train', windowAvg, self.episodesSoFar)
                 if lex:
                     self.writer.add_scalar('Violations/train', self.lastWindowAccumViolPenalties, self.episodesSoFar)
             else:
                 testAvg = float(self.accumTestRewards) / (self.episodesSoFar - self.numTraining)
                 print('\tCompleted %d test episodes' % (self.episodesSoFar - self.numTraining))
                 print('\tAverage Rewards over testing: %.2f' % testAvg)
-                self.writer.add_scalar('Score/test', windowAvg, self.episodesSoFar - self.numTraining)
                 if lex:
                     self.writer.add_scalar('Violations/test', self.lastWindowAccumViolPenalties, self.episodesSoFar - self.numTraining)
             
             print('\tAverage Rewards for last %d episodes: %.2f'  % (
                     NUM_EPS_UPDATE,windowAvg))
             print('\tPenalties incurred in the last %d episodes: %.2f'  % (
-                    NUM_EPS_UPDATE, -1 * self.lastWindowAccumViolPenalties))
+                    NUM_EPS_UPDATE, self.lastWindowAccumViolPenalties))
             print('\tEpisode took %.2f seconds' % (time.time() - self.episodeStartTime))
             if hasattr(self, 'save_model'):
                 self.save_model()
             self.lastWindowAccumRewards = 0.0
             self.lastWindowAccumViolPenalties = 0.0
             self.episodeStartTime = time.time()
+
+        if self.episodesSoFar <= self.numTraining:
+            self.writer.add_scalar('Score/train', state.getScore(), self.episodesSoFar)
+        else:
+            self.writer.add_scalar('Score/test', state.getScore(), self.episodesSoFar - self.numTraining)
 
         if self.episodesSoFar == self.numTraining:
             msg = 'Training Done (turning off epsilon and alpha)'
