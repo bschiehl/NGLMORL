@@ -115,13 +115,13 @@ class DQNLearningAgent(ReinforcementAgent):
 
         self.model.eval()
 
-    def save_model(self, path='models/'):
-        torch.save(self.model.state_dict(), '{}policy-model.pt'.format(path))
-        torch.save(self.target_model.state_dict(), '{}target-model.pt'.format(path))
+    def save_model(self, currentit, path='models/'):
+        torch.save(self.model.state_dict(), '{}policy-model{}.pt'.format(path, currentit))
+        torch.save(self.target_model.state_dict(), '{}target-model{}.pt'.format(path, currentit))
 
     def load_model(self, path='models/'):
-        self.model.load_state_dict(torch.load('{}policy-model.pt'.format(path)))
-        self.target_model.load_state_dict(torch.load('{}target-model.pt'.format(path)))
+        self.model.load_state_dict(torch.load('{}policy-model-0.pt'.format(path)))
+        self.target_model.load_state_dict(torch.load('{}target-model-0.pt'.format(path)))
 
 
 class PacmanDQNAgent(DQNLearningAgent):
@@ -243,9 +243,9 @@ class ACLearningAgent(ReinforcementAgent):
 
         self.actor.eval()
 
-    def save_model(self, path='models/'):
-        torch.save(self.actor.state_dict(), '{}actor.pt'.format(path))
-        torch.save(self.critic.state_dict(), '{}critic.pt'.format(path))
+    def save_model(self, currentit, path='models/'):
+        torch.save(self.actor.state_dict(), '{}actor{}.pt'.format(path, currentit))
+        torch.save(self.critic.state_dict(), '{}critic{}.pt'.format(path, currentit))
 
     def load_model(self, path='models/'):
         self.actor.load_state_dict(torch.load('{}actor.pt'.format(path)))

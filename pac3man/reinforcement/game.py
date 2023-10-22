@@ -533,7 +533,7 @@ class Game:
     The Game manages the control flow, soliciting actions from agents.
     """
 
-    def __init__( self, agents, display, rules, startingIndex=0, muteAgents=False, catchExceptions=False, filter=None,
+    def __init__( self, currentit, agents, display, rules, startingIndex=0, muteAgents=False, catchExceptions=False, filter=None,
                  train=False, supervise=False, learn1=False, learn2=False, lex=False):
         self.agentCrashed = False
         self.agents = agents
@@ -558,6 +558,7 @@ class Game:
         self.learn1 = learn1
         self.learn2 = learn2
         self.lex = lex
+        self.currentit = currentit
 
     def getProgress(self):
         if self.gameOver:
@@ -750,7 +751,7 @@ class Game:
             if "final" in dir( agent ) :
                 try:
                     self.mute(agentIndex)
-                    agent.final( self.state, self.filter, self.learn1, self.learn2, self.lex)
+                    agent.final( self.state, self.currentit, self.filter, self.learn1, self.learn2, self.lex)
                     self.unmute()
                 except Exception as data:
                     if not self.catchExceptions: raise

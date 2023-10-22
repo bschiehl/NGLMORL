@@ -157,9 +157,9 @@ class LDQNLearningAgent(ReinforcementAgent):
 
         self.model.eval()
 
-    def save_model(self, path='models/'):
-        torch.save(self.model.state_dict(), '{}policy-model.pt'.format(path))
-        torch.save(self.target_model.state_dict(), '{}target-model.pt'.format(path))
+    def save_model(self, currentit, path='models/'):
+        torch.save(self.model.state_dict(), '{}policy-model{}.pt'.format(path, currentit))
+        torch.save(self.target_model.state_dict(), '{}target-model{}.pt'.format(path, currentit))
 
     def load_model(self, path='models/'):
         self.model.load_state_dict(torch.load('{}policy-model.pt'.format(path)))
@@ -337,24 +337,24 @@ class LTQLearningAgent(ReinforcementAgent):
 
                 Qbi[state][action] = (1 - self.alpha) * Qbi[state][action] + self.alpha * target
 
-    def save_model(self, root):
+    def save_model(self, currentit, root='models/'):
         if not self.double:
-            with open('{}-model.pt'.format(root), 'wb') as f:
+            with open('{}model-{}.pt'.format(root, currentit), 'wb') as f:
                 pickle.dump(self.Q, f, pickle.HIGHEST_PROTOCOL)
         else:
-            with open('{}-model-A.pt'.format(root), 'wb') as f:
+            with open('{}model-A-{}.pt'.format(root, currentit), 'wb') as f:
                 pickle.dump(self.Qa, f, pickle.HIGHEST_PROTOCOL)
-            with open('{}-model-B.pt'.format(root), 'wb') as f:
+            with open('{}model-B-{}.pt'.format(root, currentit), 'wb') as f:
                 pickle.dump(self.Qb, f, pickle.HIGHEST_PROTOCOL)
 
-    def load_model(self, root):
+    def load_model(self, root='models/'):
         if not self.double:
-            with open('{}-model.pt'.format(root), 'rb') as f:
+            with open('{}model.pt'.format(root), 'rb') as f:
                 self.Q = pickle.load(f)
         else:
-            with open('{}-model-A.pt'.format(root), 'rb') as f:
+            with open('{}model-A.pt'.format(root), 'rb') as f:
                 self.Qa = pickle.load(f)
-            with open('{}-model-B.pt'.format(root), 'rb') as f:
+            with open('{}model-B.pt'.format(root), 'rb') as f:
                 self.Qb = pickle.load(f)
 
 

@@ -130,12 +130,12 @@ class ReinforcementAgent(ValueEstimationAgent):
 
             NOTE: Do *not* override or call this function
         """
-        if type(action) != str:
-            query_action = action[0]
-            update_action = action[1]
-        else:
+        if isinstance(action, str):
             query_action = action
             update_action = action
+        else:
+            query_action = action[0]
+            update_action = action[1]
         self.episodeRewards += deltaReward
         if self.episodesSoFar < self.numTraining:
             if lex and filter is not None:
@@ -249,7 +249,7 @@ class ReinforcementAgent(ValueEstimationAgent):
         if self.episodesSoFar == 0:
             print('Beginning %d episodes of Training' % (self.numTraining))
 
-    def final(self, state, filter=None, learn1=False, learn2=False, lex=False):
+    def final(self, state, currentit, filter=None, learn1=False, learn2=False, lex=False):
         """
           Called by Pacman game at the terminal state
         """
@@ -289,7 +289,7 @@ class ReinforcementAgent(ValueEstimationAgent):
                     NUM_EPS_UPDATE, self.lastWindowAccumViolPenalties))
             print('\tEpisode took %.2f seconds' % (time.time() - self.episodeStartTime))
             if hasattr(self, 'save_model'):
-                self.save_model()
+                self.save_model(currentit)
             self.lastWindowAccumRewards = 0.0
             self.lastWindowAccumViolPenalties = 0.0
             self.episodeStartTime = time.time()

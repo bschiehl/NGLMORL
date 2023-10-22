@@ -294,12 +294,12 @@ class ClassicGameRules:
     def __init__(self, timeout=30):
         self.timeout = timeout
 
-    def newGame( self, layout, pacmanAgent, ghostAgents, display, quiet = False, catchExceptions=False, filter=None,
+    def newGame( self, layout, pacmanAgent, ghostAgents, display, currentit, quiet = False, catchExceptions=False, filter=None,
                  train=False, supervise=False, learn1=False, learn2=False, lex=False):
         agents = [pacmanAgent] + ghostAgents[:layout.getNumGhosts()]
         initState = GameState()
         initState.initialize( layout, len(ghostAgents) )
-        game = Game(agents, display, self, catchExceptions=catchExceptions, filter=filter, train=train,
+        game = Game(currentit, agents, display, self, catchExceptions=catchExceptions, filter=filter, train=train,
                     supervise=supervise, learn1=learn1, learn2=learn2, lex=lex)
         game.state = initState
         self.initialState = initState.deepCopy()
@@ -581,6 +581,7 @@ def readCommand( argv ):
     #parser.add_option('--punish', type='int', dest='punish', help=default('Punishment for violation of norm base.'), default=0)
     parser.add_option('--port', type='int', dest='port', help=default('Port number.'), default=6666)
     #parser.add_option('--track', action='store_true', dest='track', default=False)
+    parser.add_option("-i", "--iterations", dest="iterations", type="int", help=default("Number of times to repeat training"), default=1)
 
     options, otherjunk = parser.parse_args(argv)
     if len(otherjunk) != 0:
@@ -603,7 +604,7 @@ def readCommand( argv ):
         args['numTraining'] = options.numTraining
         if 'numTraining' not in agentOpts: agentOpts['numTraining'] = options.numTraining
     if options.lex:
-        if options.pacman == "PacmanLTQAgent:":
+        if options.pacman == "PacmanLTQAgent":
             train_params = TrainingParameters(args['layout'].width, args['layout'].height, options.numTraining, 2 * options.numTraining, slack=[0.001, 0.001], **lexOpts)
         elif (options.pacman == "PacmanLDQNAgent" or options.pacman == "PacmanDQNAgent") and options.layout == "littleClassic":
             train_params = TrainingParameters(args['layout'].width, args['layout'].height, options.numTraining, 2 * options.numTraining, 
@@ -666,7 +667,7 @@ def readCommand( argv ):
         replayGame(**recorded)
         sys.exit(0)
 
-    return args
+    return args, options.iterations
 
 def loadAgent(pacman, nographics):
     # Looks through all pythonPath Directories for the right module,
@@ -709,8 +710,8 @@ def replayGame( layout, actions, display ):
 
     display.finish()
 
-def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30,
-              norm=None, reason=None, rec=None, supervise=False, learn1=False, learn2=False, partial=False, port=6666, lex=False):
+def runGames( currentit, layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30,
+              norm=None, reason=None, rec=None, supervise=False, learn1=False, learn2=False, partial=False, port=6666, lex=False, ):
     import __main__
     __main__.__dict__['_display'] = display
     os.environ["DISPLAY"] = ":0"
@@ -748,7 +749,7 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
             rules.quiet = False
             train = False
             sup = supervise
-        game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions, filt, train, sup, learn1,learn2, lex)
+        game = rules.newGame( layout, pacman, ghosts, gameDisplay, currentit, beQuiet, catchExceptions, filt, train, sup, learn1,learn2, lex)
         game.run()
         if not beQuiet: 
             games.append(game)
@@ -771,7 +772,7 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
     if (numGames-numTraining) > 0:
         # FOR RECORDING RESULTS
         if rec is not None:
-            with open(rec+'.csv', 'w') as file:
+            with open(rec+ str(currentit) + '.csv', 'w') as file:
                 writer = csv.writer(file)
                 header = ['score', 'blue ghosts eaten', 'orange ghosts eaten', 'violations', 'win/lose']
                 writer.writerow(header)
@@ -810,8 +811,13 @@ if __name__ == '__main__':
 
     > python pacman.py --help
     """
-    args = readCommand( sys.argv[1:] ) # Get game components based on input
-    runGames( **args )
+    cmdargs = sys.argv[1:]
+    args, iterations = readCommand( cmdargs )
+     # Get game components based on input
+    for i in range(iterations):
+        runGames( i, **args )
+        if i != iterations -1:
+            args, iterations = readCommand( cmdargs )
 
     # import cProfile
     # cProfile.run("runGames( **args )")
