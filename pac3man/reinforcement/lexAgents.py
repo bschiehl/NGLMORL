@@ -162,8 +162,8 @@ class LDQNLearningAgent(ReinforcementAgent):
         torch.save(self.target_model.state_dict(), '{}target-model{}.pt'.format(path, currentit))
 
     def load_model(self, path='models/'):
-        self.model.load_state_dict(torch.load('{}policy-model.pt'.format(path)))
-        self.target_model.load_state_dict(torch.load('{}target-model.pt'.format(path)))
+        self.model.load_state_dict(torch.load('{}policy-model0.pt'.format(path)))
+        self.target_model.load_state_dict(torch.load('{}target-model0.pt'.format(path)))
 
 
 
@@ -271,6 +271,7 @@ class LTQLearningAgent(ReinforcementAgent):
         self.init_state(state)
         self.init_state(next_state)
         permissible_actions = self.actions
+        
         for i, Qi in enumerate(self.Q):
             m = max([Qi[next_state][a] for a in permissible_actions])
             r = self.slack[i]
@@ -361,6 +362,9 @@ class LTQLearningAgent(ReinforcementAgent):
 class PacmanLTQAgent(LTQLearningAgent):
     def __init__(self, train_params, initialisation=0, double=False, discount=0.99, **args):
         LTQLearningAgent.__init__(self, train_params, initialisation, list(Actions._directions.keys()), double, discount, **args)
+        if train_params.trained:
+           self.load_model(root=train_params.model_path)
+           print("Loaded model")
 
     def getAction(self, state, filter=None, train=False, supervise=False):
         action = LTQLearningAgent.getAction(self,state, filter, train, supervise)
