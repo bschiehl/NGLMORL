@@ -1,5 +1,5 @@
 # NGLMORL
-Code repository for the thesis Normative Compliance inLexicographic Multi-Objective Reinforcement Learning Agents by Bernhard Schiehl.
+Code repository for the thesis Normative Compliance in Lexicographic Multi-Objective Reinforcement Learning Agents by Bernhard Schiehl.
 
 Some code inspired by:
 * [Joar Skalse and Lewis Hammond](https://github.com/lrhammond/lmorl) (lexicographic agents)
